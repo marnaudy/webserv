@@ -7,10 +7,12 @@ class Config {
 public:
 	Config() {}
 	~Config() {}
-
 	bool isValid();
+	void parse(std::ifstream &ifs);
+	void print();
 private:
-	std::list<ConfigServer> _servers;
+	// std::list<ConfigServer> _servers;
+	std::vector<ConfigServer> _servers;
 };
 
 #endif

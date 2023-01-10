@@ -1,6 +1,7 @@
 NAME		=	webserv
 
-SRCS		=	srcs/Config.cpp \
+SRCS		=	srcs/main.cpp \
+				srcs/Config.cpp \
 				srcs/ConfigServer.cpp \
 				srcs/Location.cpp
 
