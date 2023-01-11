@@ -1,8 +1,8 @@
-#include "ConfigServer.hpp"
+#include "Server.hpp"
 
-ConfigServer::ConfigServer() : _port(80), _address("0.0.0.0"), _maxBodySize(2000000) {}
+Server::Server() : _port(80), _address("0.0.0.0"), _maxBodySize(2000000) {}
 
-bool ConfigServer::isValid() {
+bool Server::isValid() {
 	for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
 		if (!it->isValid())
 			return (false);
@@ -10,7 +10,7 @@ bool ConfigServer::isValid() {
 	return (_locations.size() != 0);
 }
 
-void ConfigServer::parseErrorPage(std::string value) {
+void Server::parseErrorPage(std::string value) {
 	size_t startPage = value.find_last_of(" ");
 	if (startPage == std::string::npos || startPage == value.length() - 1)
 		throw BadConfigException("Bad error_page formating 1");
@@ -30,7 +30,7 @@ void ConfigServer::parseErrorPage(std::string value) {
 	}
 }
 
-void ConfigServer::parse(std::ifstream &ifs) {
+void Server::parse(std::ifstream &ifs) {
 	std::string line;
 	std::getline(ifs, line);
 	while (line != "end_server") {
@@ -59,7 +59,7 @@ void ConfigServer::parse(std::ifstream &ifs) {
 	}
 }
 
-void ConfigServer::print() {
+void Server::print() {
 	std::cout << "port = " << _port << std::endl;
 	std::cout << "address = " << _address << std::endl;
 	for (std::list<std::string>::iterator it = _names.begin(); it != _names.end(); it++) {

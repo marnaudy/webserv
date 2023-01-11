@@ -1,14 +1,14 @@
-#ifndef CONFIGSERVER_HPP
-#define CONFIGSERVER_HPP
+#ifndef SERVER_HPP
+#define SERVER_HPP
 
 #include "Location.hpp"
 #include <map>
 #include <algorithm>
 
-class ConfigServer {
+class Server {
 public:
-	ConfigServer();
-	~ConfigServer() {}
+	Server();
+	~Server() {}
 	bool isValid();
 	void parse(std::ifstream &ifs);
 	void print();

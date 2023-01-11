@@ -1,7 +1,7 @@
 #include "Config.hpp"
 
 bool Config::isValid() {
-	for (std::list<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
+	for (std::list<Server>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
 		if (!it->isValid())
 			return (false);
 	}
@@ -13,7 +13,7 @@ void Config::parse(std::ifstream &ifs) {
 	std::getline(ifs, line);
 	while (!ifs.eof()) {
 		if (parseDirective(line) == "server") {
-			ConfigServer serv;
+			Server serv;
 			serv.parse(ifs);
 			_servers.push_back(serv);
 		} else {
@@ -24,7 +24,7 @@ void Config::parse(std::ifstream &ifs) {
 }
 
 void Config::print() {
-	for (std::list<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); it++) {
+	for (std::list<Server>::iterator it = _servers.begin(); it != _servers.end(); it++) {
 		std::cout << "Server " << std::endl;
 		it->print();
 	}

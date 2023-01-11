@@ -1,7 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "ConfigServer.hpp"
+#include "Server.hpp"
 
 class Config {
 public:
@@ -11,7 +11,7 @@ public:
 	void parse(std::ifstream &ifs);
 	void print();
 private:
-	std::list<ConfigServer> _servers;
+	std::list<Server> _servers;
 };
 
 #endif
