@@ -49,7 +49,7 @@ void Location::parseCGI(std::string value) {
 void Location::parse(std::ifstream &ifs) {
 	std::string line;
 	std::getline(ifs, line);
-	while (line != "\tend_location") {
+	while (parseDirective(line) != "end_location") {
 		if (ifs.eof())
 			throw BadConfigException("End of location not found");
 		std::string directive = parseDirective(line);
@@ -73,6 +73,12 @@ void Location::parse(std::ifstream &ifs) {
 			_uploadLocation = parseValue(line);
 		} else if (directive == "cgi") {
 			parseCGI(parseValue(line));
+		} else if (directive == "return_code") {
+			_returnCode = atoi(parseValue(line).c_str());
+			if (_returnCode < 301 || _returnCode > 308)
+				throw BadConfigException("Invalid redirection code");
+		} else if (directive == "return_dest") {
+			_returnDest = parseValue(line);
 		} else {
 			throw BadConfigException("Unknown directive in location");
 		}
@@ -94,6 +100,8 @@ void Location::print() {
 	for (std::map<std::string, std::string>::iterator it = _cgi.begin(); it != _cgi.end(); ++it) {
 		std::cout << "CGI = " << it->first << ":" << it->second << std::endl;
 	}
+	std::cout << "returnCode = " << _returnCode << std::endl;
+	std::cout << "returnDest = " << _returnDest << std::endl;
 }
 
 std::string parseDirective(std::string &line) {

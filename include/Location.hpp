@@ -27,6 +27,8 @@ private:
 	bool _allowUpload;
 	std::string _uploadLocation;
 	std::map<std::string, std::string> _cgi;
+	unsigned int _returnCode;
+	std::string _returnDest;
 };
 
 class BadConfigException : public std::exception {

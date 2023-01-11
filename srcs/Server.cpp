@@ -52,7 +52,7 @@ void Server::parseErrorPage(std::string value) {
 void Server::parse(std::ifstream &ifs) {
 	std::string line;
 	std::getline(ifs, line);
-	while (line != "end_server") {
+	while (parseDirective(line) != "end_server") {
 		if (ifs.eof())
 			throw BadConfigException("Unexpected eof");
 		std::string directive = parseDirective(line);
@@ -81,7 +81,7 @@ void Server::parse(std::ifstream &ifs) {
 
 void Server::print() {
 	std::cout << "port = " << _port << std::endl;
-	std::cout << "address = " << std::hex << _address << std::endl;
+	std::cout << "address = " << std::hex << _address << std::dec << std::endl;
 	for (std::list<std::string>::iterator it = _names.begin(); it != _names.end(); it++) {
 		std::cout << "name = " << *it << std::endl;
 	}
