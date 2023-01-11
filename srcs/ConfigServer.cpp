@@ -3,8 +3,7 @@
 ConfigServer::ConfigServer() : _port(80), _address("0.0.0.0"), _maxBodySize(2000000) {}
 
 bool ConfigServer::isValid() {
-	// for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
-	for (std::vector<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
+	for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
 		if (!it->isValid())
 			return (false);
 	}
@@ -63,15 +62,15 @@ void ConfigServer::parse(std::ifstream &ifs) {
 void ConfigServer::print() {
 	std::cout << "port = " << _port << std::endl;
 	std::cout << "address = " << _address << std::endl;
-	for (unsigned int i = 0; i < _names.size(); i++) {
-		std::cout << "name = " << _names[i] << std::endl;
+	for (std::list<std::string>::iterator it = _names.begin(); it != _names.end(); it++) {
+		std::cout << "name = " << *it << std::endl;
 	}
 	for (std::map<unsigned int, std::string>::iterator it = _errorPages.begin(); it != _errorPages.end(); ++it) {
 		std::cout << "error page = " << it->first << ":" << it->second << std::endl;
 	}
 	std::cout << "maxSize = " << _maxBodySize << std::endl;
-	for (unsigned int i = 0; i < _locations.size(); i++) {
-		std::cout << "location "<< i << std::endl;
-		_locations[i].print();
+	for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); it++) {
+		std::cout << "location " << std::endl;
+		it->print();
 	}
 }

@@ -1,8 +1,7 @@
 #include "Config.hpp"
 
 bool Config::isValid() {
-	// for (std::list<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
-	for (std::vector<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
+	for (std::list<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
 		if (!it->isValid())
 			return (false);
 	}
@@ -25,8 +24,8 @@ void Config::parse(std::ifstream &ifs) {
 }
 
 void Config::print() {
-	for (unsigned int i = 0; i < _servers.size(); i++) {
-		std::cout << "Server " << i << std::endl;
-		_servers[i].print();
+	for (std::list<ConfigServer>::iterator it = _servers.begin(); it != _servers.end(); it++) {
+		std::cout << "Server " << std::endl;
+		it->print();
 	}
 }

@@ -68,8 +68,8 @@ void Location::parse(std::ifstream &ifs) {
 void Location::print() {
 	std::cout << "name = " << _name << std::endl;
 	std::cout << "root = " << _root << std::endl;
-	for (unsigned int i = 0; i < _allowMeth.size(); i++) {
-		std::cout << "meth = " << _allowMeth[i] << std::endl;
+	for (std::list<std::string>::iterator it = _allowMeth.begin(); it != _allowMeth.end(); it++) {
+		std::cout << "meth = " << *it << std::endl;
 	}
 	std::cout << "autoindex = " << _autoindex << std::endl;
 	std::cout << "dirPage = " << _dirPage << std::endl;
@@ -80,7 +80,8 @@ void Location::print() {
 std::string parseDirective(std::string &line) {
 	size_t start = line.find_first_not_of("\t ");
 	size_t end = line.find_first_of(" ", start);
-	if (start == std::string::npos || end == std::string::npos)
+	// if (start == std::string::npos || end == std::string::npos)
+	if (start == std::string::npos)
 		throw BadConfigException("Bad directive formating" + line);
 	return (line.substr(start, end - start));
 }

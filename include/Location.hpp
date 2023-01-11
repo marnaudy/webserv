@@ -3,7 +3,6 @@
 
 #include <string>
 #include <list>
-#include <vector>
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
@@ -18,8 +17,7 @@ public:
 private:
 	std::string _name;
 	std::string _root;
-	std::vector<std::string> _allowMeth;
-	// std::list<std::string> _allowMeth;
+	std::list<std::string> _allowMeth;
 	bool _autoindex;
 	std::string _dirPage;
 	bool _allowUpload;
