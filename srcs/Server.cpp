@@ -1,13 +1,32 @@
 #include "Server.hpp"
 
-Server::Server() : _port(80), _address("0.0.0.0"), _maxBodySize(2000000) {}
+Server::Server() : _port(80), _maxBodySize(2000000) {}
 
-bool Server::isValid() {
-	for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
-		if (!it->isValid())
-			return (false);
+void Server::parseAddress(std::string value) {
+	_address = 0;
+	for (int i = 3; i >= 0; i--) {
+		size_t end = value.find_first_of(".");
+		std::string byte = value.substr(0, end);
+		if (byte.size() < 1 || byte.size() > 3
+			|| byte.find_first_not_of("0123456789") != std::string::npos
+			|| atoi(byte.c_str()) > 255)
+			throw BadConfigException("Bad address");
+		_address += atoi(byte.c_str()) << (i * 8);
+		if (end == std::string::npos)
+			value.erase(0, end);
+		else
+			value.erase(0, end + 1);
 	}
-	return (_locations.size() != 0);
+	if (value.length() != 0) {
+		throw BadConfigException("Bad address");
+	}
+}
+
+void Server::checkConfig() {
+	if (_locations.size() == 0)
+		throw BadConfigException("Server has no location");
+	if (_port >= 65536)
+		throw BadConfigException("Invalid port");
 }
 
 void Server::parseErrorPage(std::string value) {
@@ -40,7 +59,7 @@ void Server::parse(std::ifstream &ifs) {
 		if (directive == "listen_port") {
 			_port = atoi(parseValue(line).c_str());
 		} else if (directive == "listen_address") {
-			_address = parseValue(line);
+			parseAddress(parseValue(line));
 		} else if (directive == "server_name") {
 			_names.push_back(parseValue(line));
 		} else if (directive == "client_max_body_size") {
@@ -57,11 +76,12 @@ void Server::parse(std::ifstream &ifs) {
 		}
 		std::getline(ifs, line);
 	}
+	checkConfig();
 }
 
 void Server::print() {
 	std::cout << "port = " << _port << std::endl;
-	std::cout << "address = " << _address << std::endl;
+	std::cout << "address = " << std::hex << _address << std::endl;
 	for (std::list<std::string>::iterator it = _names.begin(); it != _names.end(); it++) {
 		std::cout << "name = " << *it << std::endl;
 	}

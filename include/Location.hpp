@@ -2,6 +2,7 @@
 #define LOCATION_HPP
 
 #include <string>
+#include <map>
 #include <list>
 #include <fstream>
 #include <iostream>
@@ -11,10 +12,13 @@ class Location {
 public:
 	Location(std::string &name);
 	~Location() {}
-	bool isValid();
+	void checkConfig();
 	void parse(std::ifstream &ifs);
 	void print();
 private:
+	void parseMeth(std::string value);
+	void parseCGI(std::string value);
+
 	std::string _name;
 	std::string _root;
 	std::list<std::string> _allowMeth;
@@ -22,8 +26,7 @@ private:
 	std::string _dirPage;
 	bool _allowUpload;
 	std::string _uploadLocation;
-	//CGI here
-	void parseMeth(std::string value);
+	std::map<std::string, std::string> _cgi;
 };
 
 class BadConfigException : public std::exception {

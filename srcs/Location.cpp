@@ -6,12 +6,19 @@ Location::Location(std::string &name) :
 	_autoindex(true),
 	_allowUpload(false) {}
 
-bool Location::isValid() {
-	return (_name.length() != 0
-		&& _name[0] == '/'
-		&& _root.length() != 0
-		&& _allowMeth.size() != 0
-		&& (_allowUpload || _uploadLocation.length() != 0));
+void Location::checkConfig() {
+	if (_name.length() == 0 && _name[0] != '/')
+		throw BadConfigException("Location name not valid");
+	if (_root.length() == 0)
+		throw BadConfigException("Location missing root");
+	if (_allowMeth.size() == 0)
+		throw BadConfigException("Location doesn't allow any method");
+	if (_allowUpload && _uploadLocation.length() == 0)
+		throw BadConfigException("Location doesn't specify upload location");
+	for (std::map<std::string, std::string>::iterator it = _cgi.begin(); it != _cgi.end(); ++it) {
+		if (it->first[0] != '.')
+			throw BadConfigException("CGI directive has no extension");
+	}
 }
 
 void Location::parseMeth(std::string value) {
@@ -31,6 +38,12 @@ void Location::parseMeth(std::string value) {
 		}
 		start = end + 1;
 	}
+}
+
+void Location::parseCGI(std::string value) {
+	std::string extension = parseDirective(value);
+	std::string binary = parseValue(value);
+	_cgi.insert(std::pair<std::string, std::string>(extension, binary));
 }
 
 void Location::parse(std::ifstream &ifs) {
@@ -58,11 +71,14 @@ void Location::parse(std::ifstream &ifs) {
 				_allowUpload = false;
 		} else if (directive == "upload_location") {
 			_uploadLocation = parseValue(line);
+		} else if (directive == "cgi") {
+			parseCGI(parseValue(line));
 		} else {
-			throw BadConfigException("Unknown directive in location" + line);
+			throw BadConfigException("Unknown directive in location");
 		}
 		std::getline(ifs, line);
 	}
+	checkConfig();
 }
 
 void Location::print() {
@@ -75,6 +91,9 @@ void Location::print() {
 	std::cout << "dirPage = " << _dirPage << std::endl;
 	std::cout << "allowUpload = " << _allowUpload << std::endl;
 	std::cout << "uploadLocation = " << _uploadLocation << std::endl;
+	for (std::map<std::string, std::string>::iterator it = _cgi.begin(); it != _cgi.end(); ++it) {
+		std::cout << "CGI = " << it->first << ":" << it->second << std::endl;
+	}
 }
 
 std::string parseDirective(std::string &line) {
@@ -82,7 +101,7 @@ std::string parseDirective(std::string &line) {
 	size_t end = line.find_first_of(" ", start);
 	// if (start == std::string::npos || end == std::string::npos)
 	if (start == std::string::npos)
-		throw BadConfigException("Bad directive formating" + line);
+		throw BadConfigException("Bad directive formating");
 	return (line.substr(start, end - start));
 }
 

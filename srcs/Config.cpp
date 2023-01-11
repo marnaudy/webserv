@@ -1,13 +1,5 @@
 #include "Config.hpp"
 
-bool Config::isValid() {
-	for (std::list<Server>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
-		if (!it->isValid())
-			return (false);
-	}
-	return (_servers.size() != 0);
-}
-
 void Config::parse(std::ifstream &ifs) {
 	std::string line;
 	std::getline(ifs, line);
@@ -21,6 +13,8 @@ void Config::parse(std::ifstream &ifs) {
 		}
 		std::getline(ifs, line);
 	}
+	if (_servers.size() == 0)
+		throw BadConfigException("No server");
 }
 
 void Config::print() {
