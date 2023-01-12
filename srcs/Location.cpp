@@ -9,7 +9,7 @@ Location::Location(std::string &name) :
 void Location::checkConfig() {
 	if (_name.length() == 0 && _name[0] != '/')
 		throw BadConfigException("Location name not valid");
-	if (_root.length() == 0)
+	if (_root.length() == 0 && _returnCode == 0 && _returnDest.length() == 0)
 		throw BadConfigException("Location missing root");
 	if (_allowMeth.size() == 0)
 		throw BadConfigException("Location doesn't allow any method");
@@ -19,6 +19,8 @@ void Location::checkConfig() {
 		if (it->first[0] != '.')
 			throw BadConfigException("CGI directive has no extension");
 	}
+	if ((_returnCode != 0) != (_returnDest.length() != 0))
+		throw BadConfigException("Return directive is incomplete");
 }
 
 void Location::parseMeth(std::string value) {
