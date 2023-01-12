@@ -32,7 +32,7 @@ void Server::checkConfig() {
 void Server::parseErrorPage(std::string value) {
 	size_t startPage = value.find_last_of(" ");
 	if (startPage == std::string::npos || startPage == value.length() - 1)
-		throw BadConfigException("Bad error_page formating 1");
+		throw BadConfigException("Bad error_page formating");
 	std::string pageName = value.substr(startPage + 1);
 	value.erase(startPage);
 	size_t end = 0, start = 0;
@@ -41,9 +41,11 @@ void Server::parseErrorPage(std::string value) {
 		std::string token = value.substr(start, end - start);
 		int errorCode = atoi(token.c_str());
 		if (errorCode >= 400 && errorCode < 600) {
+			if (_errorPages.find(errorCode) != _errorPages.end())
+				_errorPages.erase(errorCode);
 			_errorPages.insert(std::pair<unsigned int, std::string>(errorCode, pageName));
 		} else {
-			throw BadConfigException("Bad error_page formating 2");
+			throw BadConfigException("Bad error_page formating");
 		}
 		start = end + 1;
 	}
