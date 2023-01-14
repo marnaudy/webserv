@@ -3,14 +3,16 @@ NAME		=	webserv
 SRCS		=	srcs/main.cpp \
 				srcs/Config.cpp \
 				srcs/VirtualServer.cpp \
-				srcs/Location.cpp
+				srcs/Location.cpp \
+				srcs/Response.cpp
 
 
 OBJS		=	${SRCS:.cpp=.o}
 
 HEADERS 	=	include/Config.hpp \
 				include/VirtualServer.hpp \
-				include/Location.hpp
+				include/Location.hpp \
+				include/Response.hpp
 
 CXX			=	c++
 
