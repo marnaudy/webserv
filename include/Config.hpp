@@ -1,7 +1,7 @@
 #ifndef CONFIG_HPP
 #define CONFIG_HPP
 
-#include "Server.hpp"
+#include "VirtualServer.hpp"
 
 class Config {
 public:
@@ -10,7 +10,7 @@ public:
 	void parse(std::ifstream &ifs);
 	void print();
 private:
-	std::list<Server> _servers;
+	std::list<VirtualServer> _servers;
 };
 
 #endif

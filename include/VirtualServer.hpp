@@ -1,13 +1,13 @@
-#ifndef SERVER_HPP
-#define SERVER_HPP
+#ifndef VIRTUALSERVER_HPP
+#define VIRTUALSERVER_HPP
 
 #include "Location.hpp"
 #include <algorithm>
 
-class Server {
+class VirtualServer {
 public:
-	Server();
-	~Server() {}
+	VirtualServer();
+	~VirtualServer() {}
 	void parse(std::ifstream &ifs);
 	void print();
 	void checkConfig();

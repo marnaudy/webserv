@@ -1,8 +1,8 @@
-#include "Server.hpp"
+#include "VirtualServer.hpp"
 
-Server::Server() : _port(80), _maxBodySize(2000000) {}
+VirtualServer::VirtualServer() : _port(80), _maxBodySize(2000000) {}
 
-void Server::parseAddress(std::string value) {
+void VirtualServer::parseAddress(std::string value) {
 	_address = 0;
 	for (int i = 3; i >= 0; i--) {
 		size_t end = value.find_first_of(".");
@@ -22,14 +22,14 @@ void Server::parseAddress(std::string value) {
 	}
 }
 
-void Server::checkConfig() {
+void VirtualServer::checkConfig() {
 	if (_locations.size() == 0)
 		throw BadConfigException("Server has no location");
 	if (_port >= 65536)
 		throw BadConfigException("Invalid port");
 }
 
-void Server::parseErrorPage(std::string value) {
+void VirtualServer::parseErrorPage(std::string value) {
 	size_t startPage = value.find_last_of(" ");
 	if (startPage == std::string::npos || startPage == value.length() - 1)
 		throw BadConfigException("Bad error_page formating");
@@ -51,7 +51,7 @@ void Server::parseErrorPage(std::string value) {
 	}
 }
 
-void Server::parse(std::ifstream &ifs) {
+void VirtualServer::parse(std::ifstream &ifs) {
 	std::string line;
 	std::getline(ifs, line);
 	while (parseDirective(line) != "end_server") {
@@ -81,7 +81,7 @@ void Server::parse(std::ifstream &ifs) {
 	checkConfig();
 }
 
-void Server::print() {
+void VirtualServer::print() {
 	std::cout << "port = " << _port << std::endl;
 	std::cout << "address = " << std::hex << _address << std::dec << std::endl;
 	for (std::list<std::string>::iterator it = _names.begin(); it != _names.end(); it++) {
