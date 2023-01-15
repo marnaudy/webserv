@@ -5,11 +5,12 @@
 
 class Config {
 public:
-	Config() {}
+	Config(std::string fileName);
 	~Config() {}
-	void parse(std::ifstream &ifs);
 	void print();
+	std::map<unsigned int,u_int32_t> getPortList();
 private:
+	void parse(std::ifstream &ifs);
 	std::list<VirtualServer> _servers;
 };
 

@@ -15,7 +15,7 @@ size_t Buffer::getSize() {
 }
 
 void Buffer::addToBuffer(char *toAdd, size_t sizeAdd) {
-	newContent = new char[_size + sizeAdd]();
+	char *newContent = new char[_size + sizeAdd]();
 	for (unsigned int i = 0; i < _size; ++i) {
 		newContent[i] = _content[i];
 	}
@@ -28,8 +28,8 @@ void Buffer::addToBuffer(char *toAdd, size_t sizeAdd) {
 }
 
 void Buffer::erase(size_t len) {
-	newSize = (_size >= len) ? _size - len : 0;
-	newContent = new char[newSize]();
+	size_t newSize = (_size >= len) ? _size - len : 0;
+	char *newContent = new char[newSize]();
 	for (unsigned int i = 0; i < newSize; ++i) {
 		newContent[i] = _content[len + i];
 	}

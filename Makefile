@@ -6,7 +6,8 @@ SRCS		=	srcs/main.cpp \
 				srcs/Location.cpp \
 				srcs/Response.cpp \
 				srcs/Buffer.cpp \
-				srcs/Socket.cpp
+				srcs/Socket.cpp \
+				srcs/Server.cpp
 
 
 OBJS		=	${SRCS:.cpp=.o}
@@ -16,11 +17,12 @@ HEADERS 	=	include/Config.hpp \
 				include/Location.hpp \
 				include/Response.hpp \
 				include/Buffer.hpp \
-				include/Socket.hpp
+				include/Socket.hpp \
+				include/Server.hpp
 
 CXX			=	c++
 
-CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -I./include
+CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g -I./include
 
 RM			=	rm -f
 

@@ -2,6 +2,14 @@
 
 VirtualServer::VirtualServer() : _port(80), _maxBodySize(2000000) {}
 
+unsigned int VirtualServer::getPort() {
+	return (_port);
+}
+
+u_int32_t VirtualServer::getAddress() {
+	return (_address);
+}
+
 void VirtualServer::parseAddress(std::string value) {
 	_address = 0;
 	for (int i = 3; i >= 0; i--) {

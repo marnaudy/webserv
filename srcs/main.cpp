@@ -1,19 +1,12 @@
-#include "Config.hpp"
-#include "Response.hpp"
-#include <unistd.h>
+#include "Server.hpp"
 
 int main(void)
 {
-	std::ifstream ifs("webserv.conf");
-	Config webserv;
-	webserv.parse(ifs);
-	webserv.print();
-	ifs.close();
-	std::cout << std::endl;
-	Response response(200);
-	response.addHeader("blabla", "prout");
-	char *message;
-	size_t size = response.exprt(&message);
-	write(1, message, size);
-	delete[] message;
+	try {
+		Server serv;
+		serv.printConfig();
+		serv.run();
+	} catch (std::exception &e) {
+		std::cout << e.what() << std::endl;
+	}
 }

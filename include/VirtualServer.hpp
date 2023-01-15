@@ -8,9 +8,12 @@ class VirtualServer {
 public:
 	VirtualServer();
 	~VirtualServer() {}
+	unsigned int getPort();
+	u_int32_t getAddress();
 	void parse(std::ifstream &ifs);
 	void print();
 	void checkConfig();
+
 private:
 	void parseErrorPage(std::string value);
 	void parseAddress(std::string value);
