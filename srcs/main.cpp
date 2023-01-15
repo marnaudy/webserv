@@ -10,7 +10,7 @@ int main(void)
 	webserv.print();
 	ifs.close();
 	std::cout << std::endl;
-	Response response(404);
+	Response response(200);
 	response.addHeader("blabla", "prout");
 	char *message;
 	size_t size = response.exprt(&message);
