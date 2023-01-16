@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <list>
+#include "fcntl.h"
 
 #define MAX_QUEUE 10
 
@@ -25,10 +26,11 @@ public:
 	int getFd();
 	void setFd(int fd);
 	bool isClientSocket();
-	void open(int epfd);
-	void read(int epfd);
-	void write(int epfd);
 	void acceptConnection(std::list<Socket> &vec, int epfd);
+	void openSocket();
+	void readSocket(int epfd);
+	void writeSocket(int epfd);
+	void closeSocket(int epfd);
 private:
 	unsigned int _port;
 	u_int32_t _address;
@@ -36,6 +38,15 @@ private:
 	Buffer _readBuffer;
 	Buffer _writeBuffer;
 	bool _isClientSocket;
+};
+
+class SocketException : public std::exception {
+public:
+	SocketException(std::string message);
+	virtual ~SocketException() throw() {}
+	virtual const char *what() const throw();
+private:
+	std::string _message;
 };
 
 #endif

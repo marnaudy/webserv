@@ -5,6 +5,7 @@
 
 class Config {
 public:
+	Config() {}
 	Config(std::string fileName);
 	~Config() {}
 	void print();

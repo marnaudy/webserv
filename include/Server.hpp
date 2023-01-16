@@ -8,11 +8,12 @@
 
 class Server {
 public:
-	Server();
-	Server(std::string fileName);
+	Server() {}
 	~Server() {}
+	void loadServer(std::string fileName = "webserv.conf");
 	void printConfig();
 	void run();
+	void closeServer();
 private:
 	void openSockets();
 	Config _config;

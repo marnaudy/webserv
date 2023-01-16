@@ -2,11 +2,13 @@
 
 int main(void)
 {
+	Server serv;
 	try {
-		Server serv;
+		serv.loadServer();
 		serv.printConfig();
 		serv.run();
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;
 	}
+	serv.closeServer();
 }

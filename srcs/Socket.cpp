@@ -9,10 +9,7 @@ Socket::Socket(unsigned int port, u_int32_t address, bool isClientSocket, int fd
 Socket::Socket(const Socket &other) :
 	_port(other._port), _address(other._address), _fd(other._fd), _isClientSocket(other._isClientSocket) {}
 
-Socket::~Socket() {
-	// if (_fd >= 0)
-	// 	close(_fd);
-}
+Socket::~Socket() {}
 
 int Socket::getFd() {
 	return (_fd);
@@ -26,81 +23,93 @@ bool Socket::isClientSocket() {
 	return (_isClientSocket);
 }
 
-void Socket::open(int epfd) {
+void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
+	std::cout << "Accepting" << std::endl;
+	int newFd = accept(_fd, NULL, 0);
+	if (newFd < 0)
+		throw SocketException("Error while accepting");
+	if (fcntl(newFd, F_SETFL, O_NONBLOCK) < 0)
+		throw SocketException("Error setting fd flags");
+	Socket newSocket(_port, _address, true, newFd);
+	std::list<Socket>::iterator it = vec.insert(vec.end(), newSocket);
+	epoll_event ev;
+	ev.data.ptr = &*it;
+	ev.events = EPOLLIN;
+	if (epoll_ctl(epfd, EPOLL_CTL_ADD, newFd, &ev) < 0)
+		throw SocketException("Error epoll add");
+}
+
+void Socket::openSocket() {
 	_fd = socket(PF_INET, SOCK_STREAM, 0);
-	int optVal = 1;
-	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) < 0) {
-		std::cout << "setsockopt" << std::endl;
-		throw std::exception();//Faire une vraie exception
-	}
 	if (_fd < 0)
-		throw std::exception();//Faire une vraie exception
+		throw SocketException("Error open socket");
+	int optVal = 1;
+	if (setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &optVal, sizeof(optVal)) < 0)
+		throw SocketException("Error setting socket flags");
+	if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
+		throw SocketException("Error setting fd flags");
 	struct sockaddr_in sockAddr;
 	memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sin_family = AF_INET;
 	sockAddr.sin_port = htons(_port);
 	sockAddr.sin_addr.s_addr = htonl(_address);
 	if (bind(_fd, (struct sockaddr *)(&sockAddr), sizeof(sockAddr)) < 0) {
-		std::cout << "bind" << std::endl;
-		throw std::exception();//Faire une vraie exception
+		std::cerr << "Can't bind to port " << _port << " and address "
+			<< std::hex << _address << std::dec << std::endl;
+		throw SocketException("Error bind");
 	}
 	if (listen(_fd, MAX_QUEUE) < 0)
-		throw std::exception();//Faire une vraie exception
-	epoll_event ev;
-	ev.data.fd = _fd;
-	ev.events = EPOLLIN;
-	if (epoll_ctl(epfd, EPOLL_CTL_ADD, _fd, &ev) < 0)
-		throw std::exception();//Faire une vraie exception
-	char addr[50];
-	inet_ntop(AF_INET, &sockAddr.sin_addr.s_addr, addr, 50);
-	std::cout << addr << " " << _port << " " << _fd << std::endl;
+		throw SocketException("Error listen");
 }
 
-void Socket::read(int epfd) {
+void Socket::readSocket(int epfd) {
 	std::cout << "READING" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
 	if (buffSize < 0)
-		throw std::exception(); //Custom exception here
+		throw SocketException("Error reading");
 	_readBuffer.addToBuffer(buffer, static_cast<size_t>(buffSize));
 	//Parse read buffer to a request
+	write(1, _readBuffer.getContent(), _readBuffer.getSize());
+	_readBuffer.erase(_readBuffer.getSize());
 	Response res(200);
 	res.addHeader("blob", "plouf");
 	char *resBuffer;
 	size_t resSize = res.exprt(&resBuffer);
 	_writeBuffer.addToBuffer(resBuffer, resSize);
+	delete[] resBuffer;
 	epoll_event ev;
-	ev.data.fd = _fd;
-	ev.events = EPOLLOUT & EPOLLIN;
+	ev.data.ptr = this;
+	ev.events = EPOLLOUT | EPOLLIN;
 	if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
-		throw std::exception(); //Custom exception here
+		throw SocketException("Error epoll mod");
 }
 
-void Socket::write(int epfd) {
+void Socket::writeSocket(int epfd) {
 	std::cout << "Writing" << std::endl;
 	ssize_t lenSent = send(_fd, _writeBuffer.getContent(), _writeBuffer.getSize(), 0);
 	if (lenSent < 0)
-		throw std::exception(); //Custom exception here
+		throw SocketException("Error writing");
 	_writeBuffer.erase(static_cast<size_t>(lenSent));
 	if (_writeBuffer.getSize() == 0) {
 		epoll_event ev;
-		ev.data.fd = _fd;
+		ev.data.ptr = this;
 		ev.events = EPOLLIN;
 		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
-			throw std::exception(); //Custom exception here
+			throw SocketException("Error epoll mod");
 	}
 }
 
-void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
-	std::cout << "Accepting" << std::endl;
-	int newFd = accept(_fd, NULL, 0);
-	if (newFd < 0)
-		throw std::exception(); //Custom exception here
-	Socket newSocket(_port, _address, true, newFd);
-	vec.push_back(newSocket);
-	epoll_event ev;
-	ev.data.fd = newFd;
-	ev.events = EPOLLIN;
-	if (epoll_ctl(epfd, EPOLL_CTL_ADD, newFd, &ev) < 0)
-		throw std::exception(); //Custom exception here
+void Socket::closeSocket(int epfd) {
+	std::cout << "Closing socket" << std::endl;
+	if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fd, NULL) < 0) {
+		throw SocketException("Error epoll del");
+	}
+	close(_fd);
+}
+
+SocketException::SocketException(std::string message) : _message(message) {}
+
+const char *SocketException::what() const throw() {
+	return (_message.c_str());
 }
