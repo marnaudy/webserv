@@ -7,7 +7,8 @@ SRCS		=	srcs/main.cpp \
 				srcs/Response.cpp \
 				srcs/Buffer.cpp \
 				srcs/Socket.cpp \
-				srcs/Server.cpp
+				srcs/Server.cpp \
+				srcs/Request.cpp
 
 
 OBJS		=	${SRCS:.cpp=.o}
@@ -18,7 +19,8 @@ HEADERS 	=	include/Config.hpp \
 				include/Response.hpp \
 				include/Buffer.hpp \
 				include/Socket.hpp \
-				include/Server.hpp
+				include/Server.hpp \
+				include/Request.hpp
 
 CXX			=	c++
 

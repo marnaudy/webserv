@@ -1,6 +1,6 @@
 #include "Buffer.hpp"
 
-Buffer::Buffer() : _content(NULL), _size(0) {}
+Buffer::Buffer() : _content(NULL), _size(0), _pos(0) {}
 
 Buffer::~Buffer() {
 	delete[] _content;
@@ -12,6 +12,28 @@ char *Buffer::getContent() {
 
 size_t Buffer::getSize() {
 	return (_size);
+}
+
+size_t Buffer::getPos() {
+	return (_pos);
+}
+
+void Buffer::setPos(size_t pos) {
+	_pos = pos;
+}
+
+std::string Buffer::getLine(int &status) {
+	size_t oldPos = _pos;
+	while (_pos + 1 < _size) {
+		if (_content[_pos] == '\r' && _content[_pos + 1] == '\n') {
+			status = 0;
+			_pos += 2;
+			return (std::string(&_content[oldPos], _pos - 2 - oldPos));
+		}
+		_pos++;
+	}
+	status = -1;
+	return (std::string());
 }
 
 void Buffer::addToBuffer(char *toAdd, size_t sizeAdd) {

@@ -1,13 +1,14 @@
 #include "Socket.hpp"
 
 Socket::Socket(unsigned int port, u_int32_t address, bool isClientSocket) :
-	_port(port), _address(address), _fd(-1), _isClientSocket(isClientSocket) {}
+	_port(port), _address(address), _fd(-1), _isClientSocket(isClientSocket), _closeAfterWrite(false) {}
 
 Socket::Socket(unsigned int port, u_int32_t address, bool isClientSocket, int fd) :
-	_port(port), _address(address), _fd(fd), _isClientSocket(isClientSocket) {}
+	_port(port), _address(address), _fd(fd), _isClientSocket(isClientSocket), _closeAfterWrite(false) {}
 
 Socket::Socket(const Socket &other) :
-	_port(other._port), _address(other._address), _fd(other._fd), _isClientSocket(other._isClientSocket) {}
+	_port(other._port), _address(other._address), _fd(other._fd),
+	_isClientSocket(other._isClientSocket), _closeAfterWrite(other._closeAfterWrite) {}
 
 Socket::~Socket() {}
 
@@ -34,7 +35,7 @@ void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
 	std::list<Socket>::iterator it = vec.insert(vec.end(), newSocket);
 	epoll_event ev;
 	ev.data.ptr = &*it;
-	ev.events = EPOLLIN;
+	ev.events = EPOLLIN | EPOLLRDHUP;
 	if (epoll_ctl(epfd, EPOLL_CTL_ADD, newFd, &ev) < 0)
 		throw SocketException("Error epoll add");
 }
@@ -69,23 +70,54 @@ void Socket::readSocket(int epfd) {
 	if (buffSize < 0)
 		throw SocketException("Error reading");
 	_readBuffer.addToBuffer(buffer, static_cast<size_t>(buffSize));
-	//Parse read buffer to a request
-	write(1, _readBuffer.getContent(), _readBuffer.getSize());
-	_readBuffer.erase(_readBuffer.getSize());
-	Response res(200);
-	res.addHeader("blob", "plouf");
-	char *resBuffer;
-	size_t resSize = res.exprt(&resBuffer);
-	_writeBuffer.addToBuffer(resBuffer, resSize);
-	delete[] resBuffer;
-	epoll_event ev;
-	ev.data.ptr = this;
-	ev.events = EPOLLOUT | EPOLLIN;
-	if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
-		throw SocketException("Error epoll mod");
+
+
+	Request req;
+	int parse_len;
+	parse_len = req.parse(_readBuffer);
+	std::cout << "parse_len = " << parse_len << std::endl;
+	while (parse_len != 0) {
+		if (parse_len < 0) {
+			//Generate bad request response
+			Response res(400);
+			res.addHeader("bad", "request");
+			res.addHeader("tu", "pues");
+			char *resBuffer;
+			size_t resSize = res.exprt(&resBuffer);
+			_writeBuffer.addToBuffer(resBuffer, resSize);
+			delete[] resBuffer;
+			_closeAfterWrite = true;
+			std::cout << "set close after write" << std::endl;
+			epoll_event ev;
+			ev.data.ptr = this;
+			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
+			if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
+				throw SocketException("Error epoll mod");
+			return;
+		}
+		_readBuffer.erase(parse_len);
+		req.print();
+		//Send request to config -> virtualServer
+		//Get response
+		Response res(200);
+		res.addHeader("blob", "plouf");
+		char *resBuffer;
+		size_t resSize = res.exprt(&resBuffer);
+		_writeBuffer.addToBuffer(resBuffer, resSize);
+		delete[] resBuffer;
+
+		epoll_event ev;
+		ev.data.ptr = this;
+		ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
+		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
+			throw SocketException("Error epoll mod");
+		req = Request();
+		parse_len = req.parse(_readBuffer);
+	std::cout << "parse_len = " << parse_len << std::endl;
+	}
 }
 
-void Socket::writeSocket(int epfd) {
+int Socket::writeSocket(int epfd) {
 	std::cout << "Writing" << std::endl;
 	ssize_t lenSent = send(_fd, _writeBuffer.getContent(), _writeBuffer.getSize(), 0);
 	if (lenSent < 0)
@@ -94,10 +126,13 @@ void Socket::writeSocket(int epfd) {
 	if (_writeBuffer.getSize() == 0) {
 		epoll_event ev;
 		ev.data.ptr = this;
-		ev.events = EPOLLIN;
+		ev.events = EPOLLIN | EPOLLRDHUP;
 		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
 			throw SocketException("Error epoll mod");
+		if (_closeAfterWrite)
+			return (1);
 	}
+	return (0);
 }
 
 void Socket::closeSocket(int epfd) {

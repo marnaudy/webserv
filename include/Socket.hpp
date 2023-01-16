@@ -3,6 +3,7 @@
 
 #include "Buffer.hpp"
 #include "Response.hpp"
+#include "Request.hpp"
 #include <cstdlib>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -22,14 +23,13 @@ public:
 	Socket(unsigned int port, u_int32_t address, bool isClientSocket, int fd);
 	Socket(const Socket &other);
 	~Socket();
-	bool operator==(const Socket &rhs);
 	int getFd();
 	void setFd(int fd);
 	bool isClientSocket();
 	void acceptConnection(std::list<Socket> &vec, int epfd);
 	void openSocket();
 	void readSocket(int epfd);
-	void writeSocket(int epfd);
+	int writeSocket(int epfd);
 	void closeSocket(int epfd);
 private:
 	unsigned int _port;
@@ -38,6 +38,7 @@ private:
 	Buffer _readBuffer;
 	Buffer _writeBuffer;
 	bool _isClientSocket;
+	bool _closeAfterWrite;
 };
 
 class SocketException : public std::exception {

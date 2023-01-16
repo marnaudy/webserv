@@ -16,6 +16,7 @@ public:
 	void closeServer();
 private:
 	void openSockets();
+	void closeSocket(Socket &sock);
 	Config _config;
 	std::list<Socket> _sockets;
 	int _epfd;
