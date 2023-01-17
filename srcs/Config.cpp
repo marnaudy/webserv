@@ -13,23 +13,6 @@ Config::Config(std::string fileName) {
 	ifs.close();
 }
 
-void Config::parse(std::ifstream &ifs) {
-	std::string line;
-	std::getline(ifs, line);
-	while (!ifs.eof()) {
-		if (parseDirective(line) == "server") {
-			VirtualServer serv;
-			serv.parse(ifs);
-			_servers.push_back(serv);
-		} else {
-			throw BadConfigException("Unknown directive");
-		}
-		std::getline(ifs, line);
-	}
-	if (_servers.size() == 0)
-		throw BadConfigException("No server");
-}
-
 void Config::print() {
 	for (std::list<VirtualServer>::iterator it = _servers.begin(); it != _servers.end(); it++) {
 		std::cout << "VirtualServer " << std::endl;
@@ -47,4 +30,41 @@ std::map<unsigned int,std::list<addressInfo> > Config::getPortList() {
 		list.push_back(addr);
 	}
 	return (portList);
+}
+
+Response *Config::handleRequest(Request &req) {
+	unsigned int port = req.getPort();
+	u_int32_t addr = req.getAddress();
+	std::string host = req.getHeader("host");
+	VirtualServer *chosenServer = NULL;
+	for (std::list<VirtualServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
+		if (it->getPort() == port && (it->getAddress() == addr || it->getAddress() == 0)) {
+			if (chosenServer == NULL)
+				chosenServer = &*it;
+			if (it->getAddress() != 0 && chosenServer->getAddress() == 0)
+				chosenServer = &*it;
+			if (it->matchHost(host) && !chosenServer->matchHost(host))
+				chosenServer = &*it;
+		}
+	}
+	if (chosenServer == NULL)
+		throw BadConfigException("Request doesn't match any server");
+	return (chosenServer->handleRequest(req));
+}
+
+void Config::parse(std::ifstream &ifs) {
+	std::string line;
+	std::getline(ifs, line);
+	while (!ifs.eof()) {
+		if (parseDirective(line) == "server") {
+			VirtualServer serv;
+			serv.parse(ifs);
+			_servers.push_back(serv);
+		} else {
+			throw BadConfigException("Unknown directive");
+		}
+		std::getline(ifs, line);
+	}
+	if (_servers.size() == 0)
+		throw BadConfigException("No server");
 }

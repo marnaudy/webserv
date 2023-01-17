@@ -1,6 +1,6 @@
 #include "Location.hpp"
 
-Location::Location(std::string &name) : 
+Location::Location(std::string name) : 
 	_name(name),
 	_allowMeth(1, "GET"),
 	_autoindex(true),
@@ -105,6 +105,29 @@ void Location::print() {
 	}
 	std::cout << "returnCode = " << _returnCode << std::endl;
 	std::cout << "returnDest = " << _returnDest << std::endl;
+}
+
+unsigned int Location::match(std::string &uri) {
+	if (uri.find(_name) != 0 && (uri.length() == _name.length() || uri[_name.length()] == '/'))
+		return (0);
+	return (_name.length());
+}
+
+void Location::handleRequest(Request &req, Response &res) {
+	if (req.getMethod() != "GET") {
+		res.setCode(405);
+		return;
+	}
+	//GET only
+	std::string fileName = _root + req.getURI().substr(_name.length());
+	std::ifstream ifs(fileName.c_str());
+	if (!ifs.is_open() || ifs.fail()) {
+		res.setCode(404);
+		return;
+	}
+	res.readFileContent(ifs);
+	res.setContentType(fileName);
+	ifs.close();
 }
 
 std::string parseDirective(std::string &line) {

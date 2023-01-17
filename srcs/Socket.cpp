@@ -43,7 +43,6 @@ void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
 	unsigned int newMaxBodySize;
 	bool foundMatch = false;
 	for (std::list<addressInfo>::iterator it = _addressList.begin(); it != _addressList.end(); ++it) {
-	std::cout << std::hex << it->address << std::dec << std::endl;
 		if (it->address == newAddress) {
 			newMaxBodySize = it->maxBodySize;
 			foundMatch = true;
@@ -92,7 +91,7 @@ void Socket::openSocket() {
 		throw SocketException("Error listen");
 }
 
-void Socket::readSocket(int epfd) {
+void Socket::readSocket(int epfd, Config &config) {
 	std::cout << "READING" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
@@ -101,20 +100,22 @@ void Socket::readSocket(int epfd) {
 	_readBuffer.addToBuffer(buffer, static_cast<size_t>(buffSize));
 
 
-	Request req;
+	Request req(_port, _address);
 	int parse_len;
 	parse_len = req.parse(_readBuffer, _maxBodySize);
 	std::cout << "parse_len = " << parse_len << std::endl;
 	while (parse_len != 0) {
 		if (parse_len < 0) {
-			//Generate bad request response
-			Response res(400);
-			res.addHeader("bad", "request");
-			res.addHeader("tu", "pues");
+			Response *res = new Response(400);
+			res->addHeader("bad", "request");
+			res->addHeader("tu", "pues");
+			VirtualServer serv;
+			serv.handleError(*res);
 			char *resBuffer;
-			size_t resSize = res.exprt(&resBuffer);
+			size_t resSize = res->exprt(&resBuffer);
 			_writeBuffer.addToBuffer(resBuffer, resSize);
 			delete[] resBuffer;
+			delete res;
 			_closeAfterWrite = true;
 			std::cout << "set close after write" << std::endl;
 			epoll_event ev;
@@ -128,19 +129,19 @@ void Socket::readSocket(int epfd) {
 		req.print();
 		//Send request to config -> virtualServer
 		//Get response
-		Response res(200);
-		res.addHeader("blob", "plouf");
+		Response *res = config.handleRequest(req);
 		char *resBuffer;
-		size_t resSize = res.exprt(&resBuffer);
+		size_t resSize = res->exprt(&resBuffer);
 		_writeBuffer.addToBuffer(resBuffer, resSize);
 		delete[] resBuffer;
+		delete res;
 
 		epoll_event ev;
 		ev.data.ptr = this;
 		ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
 		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
 			throw SocketException("Error epoll mod");
-		req = Request();
+		req = Request(_port, _address);
 		parse_len = req.parse(_readBuffer, _maxBodySize);
 	}
 }

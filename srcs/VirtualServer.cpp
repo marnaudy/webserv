@@ -13,6 +13,58 @@ u_int32_t VirtualServer::getAddress() {
 unsigned int VirtualServer::getMaxBodySize() {
 	return (_maxBodySize);
 }
+bool VirtualServer::matchHost(std::string host) {
+	return (std::find(_names.begin(), _names.end(), host) != _names.end());
+}
+
+void VirtualServer::checkConfig() {
+	if (_locations.size() == 0)
+		throw BadConfigException("Server has no location");
+	if (_port >= 65536)
+		throw BadConfigException("Invalid port");
+}
+
+Response *VirtualServer::handleRequest(Request &req) {
+	Response *res = new Response();
+	std::string uri = req.getURI();
+	Location *chosenLocation = NULL;
+	int bestMatch = 0;
+	for (std::list<Location>::iterator it = _locations.begin(); it != _locations.end(); ++it) {
+		int match = it->match(uri);
+		if (match > bestMatch) {
+			bestMatch = match;
+			chosenLocation = &*it;
+		}
+	}
+	if (chosenLocation == NULL)
+		*res = Response(404);
+	else
+		chosenLocation->handleRequest(req, *res);
+	if (res->getCode() >= 400 && res->getCode() < 600)
+		handleError(*res);
+	return (res);
+}
+
+void VirtualServer::handleError(Response &res) {
+	unsigned int code = res.getCode();
+	std::string fileName;
+	std::map<unsigned int, std::string>::iterator it = _errorPages.find(code);
+	if (it == _errorPages.end()) {
+		std::ostringstream ss;
+		ss << code;
+		fileName = "error/" + ss.str() + ".html"; 
+	} else {
+		fileName = _errorPages[code];
+	}
+	std::ifstream ifs(fileName.c_str());
+	if (!ifs.is_open() || ifs.fail()) {
+		delete &res;
+		throw BadConfigException("Couldn't load error page: " + fileName);
+	}
+	res.readFileContent(ifs);
+	res.setContentType(fileName);
+	ifs.close();
+}
 
 void VirtualServer::parseAddress(std::string value) {
 	_address = 0;
@@ -32,13 +84,6 @@ void VirtualServer::parseAddress(std::string value) {
 	if (value.length() != 0) {
 		throw BadConfigException("Bad address");
 	}
-}
-
-void VirtualServer::checkConfig() {
-	if (_locations.size() == 0)
-		throw BadConfigException("Server has no location");
-	if (_port >= 65536)
-		throw BadConfigException("Invalid port");
 }
 
 void VirtualServer::parseErrorPage(std::string value) {

@@ -56,7 +56,7 @@ void Server::run() {
 				}
 			}
 			if (sock->isClientSocket() && evs[i].events & EPOLLIN)
-				sock->readSocket(_epfd);
+				sock->readSocket(_epfd, _config);
 			if (!sock->isClientSocket() && evs[i].events & EPOLLIN)
 				sock->acceptConnection(_sockets, _epfd);
 		}

@@ -7,14 +7,18 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include "Request.hpp"
+#include "Response.hpp"
 
 class Location {
 public:
-	Location(std::string &name);
+	Location(std::string name);
 	~Location() {}
 	void checkConfig();
 	void parse(std::ifstream &ifs);
 	void print();
+	unsigned int match(std::string &uri);
+	void handleRequest(Request &req, Response &res);
 private:
 	void parseMeth(std::string value);
 	void parseCGI(std::string value);

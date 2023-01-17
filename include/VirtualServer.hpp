@@ -12,10 +12,12 @@ public:
 	unsigned int getPort();
 	u_int32_t getAddress();
 	unsigned int getMaxBodySize();
+	bool matchHost(std::string host);
 	void parse(std::ifstream &ifs);
 	void print();
 	void checkConfig();
-
+	Response *handleRequest(Request &req);
+	void handleError(Response &res);
 private:
 	void parseErrorPage(std::string value);
 	void parseAddress(std::string value);

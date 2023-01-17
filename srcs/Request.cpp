@@ -1,5 +1,7 @@
 #include "Request.hpp"
 
+Request::Request(unsigned int port, u_int32_t address) : _port(port), _address(address) {}
+
 std::vector<std::string> split(std::string str) {
 	size_t end = 0;
 	size_t start = 0;
@@ -90,6 +92,30 @@ void Request::print() {
 	}
 	write(1, &_content[0], _content.size());
 	std::cout << std::endl;
+}
+
+unsigned int Request::getPort() {
+	return (_port);
+}
+
+u_int32_t Request::getAddress() {
+	return (_address);
+}
+
+std::string &Request::getHeader(std::string field) {
+	return (_headers[field]);
+}
+
+std::string &Request::getMethod() {
+	return (_method);
+}
+
+std::string &Request::getURI() {
+	return (_uri);
+}
+
+std::string &Request::getVersion() {
+	return (_version);
 }
 
 int Request::readContent(Buffer &buf, unsigned int maxBodySize, int contentLength) {

@@ -4,6 +4,8 @@
 #include "Buffer.hpp"
 #include "Response.hpp"
 #include "Request.hpp"
+#include "VirtualServer.hpp"
+#include "Config.hpp"
 #include "webserv.hpp"
 #include <cstdlib>
 #include <sys/socket.h>
@@ -29,7 +31,7 @@ public:
 	bool isClientSocket();
 	void acceptConnection(std::list<Socket> &vec, int epfd);
 	void openSocket();
-	void readSocket(int epfd);
+	void readSocket(int epfd, Config &config);
 	int writeSocket(int epfd);
 	void closeSocket(int epfd);
 private:
