@@ -36,7 +36,6 @@ void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
 	if (newFd < 0)
 		throw SocketException("Error while accepting");
 	struct sockaddr_in sockAddr;
-	memset(&sockAddr, 0, sizeof(sockAddr));
 	socklen_t sockAddrLen = sizeof(sockAddr);
 	if (getsockname(newFd, (struct sockaddr *)(&sockAddr), &sockAddrLen) < 0)
 		throw SocketException("Error while getting address of new socket");
@@ -81,7 +80,6 @@ void Socket::openSocket() {
 	if (fcntl(_fd, F_SETFL, O_NONBLOCK) < 0)
 		throw SocketException("Error setting fd flags");
 	struct sockaddr_in sockAddr;
-	memset(&sockAddr, 0, sizeof(sockAddr));
 	sockAddr.sin_family = AF_INET;
 	sockAddr.sin_port = htons(_port);
 	sockAddr.sin_addr.s_addr = htonl(_address);
