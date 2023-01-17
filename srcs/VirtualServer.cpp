@@ -10,6 +10,10 @@ u_int32_t VirtualServer::getAddress() {
 	return (_address);
 }
 
+unsigned int VirtualServer::getMaxBodySize() {
+	return (_maxBodySize);
+}
+
 void VirtualServer::parseAddress(std::string value) {
 	_address = 0;
 	for (int i = 3; i >= 0; i--) {

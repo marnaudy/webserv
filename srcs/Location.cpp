@@ -4,7 +4,8 @@ Location::Location(std::string &name) :
 	_name(name),
 	_allowMeth(1, "GET"),
 	_autoindex(true),
-	_allowUpload(false) {}
+	_allowUpload(false),
+	_returnCode (0) {}
 
 void Location::checkConfig() {
 	if (_name.length() == 0 && _name[0] != '/')

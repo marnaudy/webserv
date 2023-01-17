@@ -1,13 +1,19 @@
 #include "Socket.hpp"
 
-Socket::Socket(unsigned int port, u_int32_t address, bool isClientSocket) :
-	_port(port), _address(address), _fd(-1), _isClientSocket(isClientSocket), _closeAfterWrite(false) {}
+Socket::Socket(unsigned int port, std::list<addressInfo> addressList) :
+	_port(port), _addressList(addressList), _fd(-1), _isClientSocket(false), _closeAfterWrite(false) {
+	if (addressList.size() == 1)
+		_address = _addressList.front().address;
+	else
+		_address = 0;
+}
 
-Socket::Socket(unsigned int port, u_int32_t address, bool isClientSocket, int fd) :
-	_port(port), _address(address), _fd(fd), _isClientSocket(isClientSocket), _closeAfterWrite(false) {}
+Socket::Socket(unsigned int port, u_int32_t address, int fd, unsigned int maxBodySize) :
+	_port(port), _address(address), _fd(fd), _maxBodySize(maxBodySize), _isClientSocket(true), _closeAfterWrite(false) {}
 
 Socket::Socket(const Socket &other) :
-	_port(other._port), _address(other._address), _fd(other._fd),
+	_port(other._port), _addressList(other._addressList), _address(other._address),
+	_fd(other._fd), _maxBodySize(other._maxBodySize),
 	_isClientSocket(other._isClientSocket), _closeAfterWrite(other._closeAfterWrite) {}
 
 Socket::~Socket() {}
@@ -29,9 +35,34 @@ void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
 	int newFd = accept(_fd, NULL, 0);
 	if (newFd < 0)
 		throw SocketException("Error while accepting");
+	struct sockaddr_in sockAddr;
+	memset(&sockAddr, 0, sizeof(sockAddr));
+	socklen_t sockAddrLen = sizeof(sockAddr);
+	if (getsockname(newFd, (struct sockaddr *)(&sockAddr), &sockAddrLen) < 0)
+		throw SocketException("Error while getting address of new socket");
+	u_int32_t newAddress = ntohl(sockAddr.sin_addr.s_addr);
+	unsigned int newMaxBodySize;
+	bool foundMatch = false;
+	for (std::list<addressInfo>::iterator it = _addressList.begin(); it != _addressList.end(); ++it) {
+	std::cout << std::hex << it->address << std::dec << std::endl;
+		if (it->address == newAddress) {
+			newMaxBodySize = it->maxBodySize;
+			foundMatch = true;
+			break;
+		}
+		if (it->address == 0 && !foundMatch) {
+			newMaxBodySize = it->maxBodySize;
+			foundMatch = true;
+		}
+	}
+	if (!foundMatch) {
+		std::cout << "Closed new socket because the IP address doesn't match any server" << std::endl;
+		close(newFd);
+		return;
+	}
 	if (fcntl(newFd, F_SETFL, O_NONBLOCK) < 0)
 		throw SocketException("Error setting fd flags");
-	Socket newSocket(_port, _address, true, newFd);
+	Socket newSocket(_port, newAddress, newFd, newMaxBodySize);
 	std::list<Socket>::iterator it = vec.insert(vec.end(), newSocket);
 	epoll_event ev;
 	ev.data.ptr = &*it;
@@ -74,7 +105,7 @@ void Socket::readSocket(int epfd) {
 
 	Request req;
 	int parse_len;
-	parse_len = req.parse(_readBuffer);
+	parse_len = req.parse(_readBuffer, _maxBodySize);
 	std::cout << "parse_len = " << parse_len << std::endl;
 	while (parse_len != 0) {
 		if (parse_len < 0) {
@@ -112,8 +143,7 @@ void Socket::readSocket(int epfd) {
 		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
 			throw SocketException("Error epoll mod");
 		req = Request();
-		parse_len = req.parse(_readBuffer);
-	std::cout << "parse_len = " << parse_len << std::endl;
+		parse_len = req.parse(_readBuffer, _maxBodySize);
 	}
 }
 

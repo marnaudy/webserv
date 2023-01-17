@@ -12,9 +12,9 @@ void Server::printConfig() {
 }
 
 void Server::openSockets() {
-	std::map<unsigned int, u_int32_t> portList = _config.getPortList();
-	for (std::map<unsigned int, u_int32_t>::iterator it = portList.begin(); it != portList.end(); ++it) {
-		Socket newSocket(it->first, it->second, 0);
+	std::map<unsigned int, std::list<addressInfo> > portList = _config.getPortList();
+	for (std::map<unsigned int, std::list<addressInfo> >::iterator it = portList.begin(); it != portList.end(); ++it) {
+		Socket newSocket(it->first, it->second);
 		newSocket.openSocket();
 		std::list<Socket>::iterator newIt = _sockets.insert(_sockets.end(), newSocket);
 		epoll_event ev;

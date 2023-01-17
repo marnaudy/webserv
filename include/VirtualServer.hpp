@@ -2,6 +2,7 @@
 #define VIRTUALSERVER_HPP
 
 #include "Location.hpp"
+#include "Location.hpp"
 #include <algorithm>
 
 class VirtualServer {
@@ -10,6 +11,7 @@ public:
 	~VirtualServer() {}
 	unsigned int getPort();
 	u_int32_t getAddress();
+	unsigned int getMaxBodySize();
 	void parse(std::ifstream &ifs);
 	void print();
 	void checkConfig();

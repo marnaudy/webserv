@@ -20,7 +20,8 @@ HEADERS 	=	include/Config.hpp \
 				include/Buffer.hpp \
 				include/Socket.hpp \
 				include/Server.hpp \
-				include/Request.hpp
+				include/Request.hpp \
+				include/webserv.hpp
 
 CXX			=	c++
 

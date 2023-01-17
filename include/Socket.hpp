@@ -4,6 +4,7 @@
 #include "Buffer.hpp"
 #include "Response.hpp"
 #include "Request.hpp"
+#include "webserv.hpp"
 #include <cstdlib>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,14 +14,14 @@
 #include <arpa/inet.h>
 #include <cstring>
 #include <list>
-#include "fcntl.h"
+#include <fcntl.h>
 
 #define MAX_QUEUE 10
 
 class Socket {
 public:
-	Socket(unsigned int port, u_int32_t address, bool isClientSocket);
-	Socket(unsigned int port, u_int32_t address, bool isClientSocket, int fd);
+	Socket(unsigned int port, std::list<addressInfo> addressList);
+	Socket(unsigned int port, u_int32_t address, int fd, unsigned int maxBodySize);
 	Socket(const Socket &other);
 	~Socket();
 	int getFd();
@@ -33,10 +34,12 @@ public:
 	void closeSocket(int epfd);
 private:
 	unsigned int _port;
+	std::list<addressInfo> _addressList;
 	u_int32_t _address;
 	int _fd;
 	Buffer _readBuffer;
 	Buffer _writeBuffer;
+	unsigned int _maxBodySize;
 	bool _isClientSocket;
 	bool _closeAfterWrite;
 };

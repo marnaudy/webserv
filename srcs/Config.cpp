@@ -37,15 +37,14 @@ void Config::print() {
 	}
 }
 
-std::map<unsigned int,u_int32_t> Config::getPortList() {
-	std::map<unsigned int,u_int32_t> portList;
+std::map<unsigned int,std::list<addressInfo> > Config::getPortList() {
+	std::map<unsigned int,std::list<addressInfo> > portList;
 	for (std::list<VirtualServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
-		if (portList.find(it->getPort()) == portList.end())
-			portList.insert(std::pair<unsigned int, u_int32_t>(it->getPort(), it->getAddress()));
-		else {
-			portList.erase(it->getPort());
-			portList.insert(std::pair<unsigned int, u_int32_t>(it->getPort(), 0));
-		}
+		std::list<addressInfo> &list = portList[it->getPort()];
+		addressInfo addr;
+		addr.address = it->getAddress();
+		addr.maxBodySize = it->getMaxBodySize();
+		list.push_back(addr);
 	}
 	return (portList);
 }
