@@ -1,6 +1,6 @@
 #include "Request.hpp"
 
-Request::Request(unsigned int port, u_int32_t address) : _port(port), _address(address) {}
+Request::Request(unsigned int port, u_int32_t address) : _port(port), _address(address), _errorCode(0) {}
 
 std::vector<std::string> split(std::string str) {
 	size_t end = 0;
@@ -18,8 +18,9 @@ int Request::parse(Buffer &buf, unsigned int maxBodySize) {
 	buf.setPos(0);
 	int status;
 	status = parseFirstLine(buf);
-	if (status < 0) 
+	if (status < 0)
 		return (status);
+	status = 0;
 	while (status == 0) {
 		status = parseHeaderLine(buf);
 	}
@@ -137,6 +138,10 @@ int Request::parseFirstLine(Buffer &buf) {
 	std::string line = buf.getLine(status);
 	if (status < 0)
 		return (0);
+	if (line.length() == 0) {
+		buf.erase(buf.getPos());
+		return (0);
+	}
 	status = checkFirstLine(line);
 	if (status < 0)
 		return (status);

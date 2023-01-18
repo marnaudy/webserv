@@ -19,6 +19,7 @@ public:
 	void printContent();
 	void addHeader(std::string field, std::string value);
 	void readFileContent(std::ifstream &ifs);
+	void setContent(std::string &str);
 	void setContentType(std::string fileName);
 	size_t exprt(char **buffer);
 private:

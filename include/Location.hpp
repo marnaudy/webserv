@@ -7,6 +7,11 @@
 #include <fstream>
 #include <iostream>
 #include <cstdlib>
+#include <algorithm>
+#include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
+#include <sys/types.h>
 #include "Request.hpp"
 #include "Response.hpp"
 
@@ -18,7 +23,14 @@ public:
 	void parse(std::ifstream &ifs);
 	void print();
 	unsigned int match(std::string &uri);
+	void handleDirList(Response &res, std::string dirName, std::string &uri);
+	void handleGetFile(Response &res, std::string fileName);
+	void handleGetDir(Response &res, std::string fileName, std::string &uri);
+	void handleGet(Request &req, Response &res);
+	void handlePost(Request &req, Response &res);
+	void handleDelete(Request &req, Response &res);
 	void handleRequest(Request &req, Response &res);
+	std::string getFileName(std::string &uri);
 private:
 	void parseMeth(std::string value);
 	void parseCGI(std::string value);

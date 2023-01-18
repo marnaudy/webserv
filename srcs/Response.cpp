@@ -98,6 +98,14 @@ void Response::readFileContent(std::ifstream &ifs) {
 		if (c != EOF)
 			_content.push_back(c);
 	}
+	ss << _content.size();
+	_headers["content-length"] = ss.str();
+}
+
+void Response::setContent(std::string &str) {
+	_content.insert(_content.begin(), str.begin(), str.end());
+	std::ostringstream ss;
+	ss << _content.size();
 	_headers["content-length"] = ss.str();
 }
 
