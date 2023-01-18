@@ -26,6 +26,11 @@ void VirtualServer::checkConfig() {
 
 Response *VirtualServer::handleRequest(Request &req) {
 	Response *res = new Response();
+	if (req.getErrorCode() != 0) {
+		res->setCode(req.getErrorCode());
+		handleError(*res);
+		return (res);
+	}
 	std::string uri = req.getURI();
 	Location *chosenLocation = NULL;
 	int bestMatch = 0;

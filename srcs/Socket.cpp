@@ -98,19 +98,14 @@ void Socket::readSocket(int epfd, Config &config) {
 	if (buffSize < 0)
 		throw SocketException("Error reading");
 	_readBuffer.addToBuffer(buffer, static_cast<size_t>(buffSize));
-
-
 	Request req(_port, _address);
 	int parse_len;
 	parse_len = req.parse(_readBuffer, _maxBodySize);
 	std::cout << "parse_len = " << parse_len << std::endl;
 	while (parse_len != 0) {
 		if (parse_len < 0) {
-			Response *res = new Response(400);
-			res->addHeader("bad", "request");
-			res->addHeader("tu", "pues");
-			VirtualServer serv;
-			serv.handleError(*res);
+			req.setErrorCode(-parse_len);
+			Response *res = config.handleRequest(req);
 			char *resBuffer;
 			size_t resSize = res->exprt(&resBuffer);
 			_writeBuffer.addToBuffer(resBuffer, resSize);
@@ -127,15 +122,12 @@ void Socket::readSocket(int epfd, Config &config) {
 		}
 		_readBuffer.erase(parse_len);
 		req.print();
-		//Send request to config -> virtualServer
-		//Get response
 		Response *res = config.handleRequest(req);
 		char *resBuffer;
 		size_t resSize = res->exprt(&resBuffer);
 		_writeBuffer.addToBuffer(resBuffer, resSize);
 		delete[] resBuffer;
 		delete res;
-
 		epoll_event ev;
 		ev.data.ptr = this;
 		ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;

@@ -22,7 +22,16 @@ public:
 	std::string &getMethod();
 	std::string &getURI();
 	std::string &getVersion();
+	unsigned int getErrorCode();
+	void setErrorCode(unsigned int code);
 private:
+	int checkMethod(std::string &meth);
+	int checkURI(std::string &uri);
+	int checkVersion(std::string &version);
+	int checkFirstLine(std::string line);
+	int parseFirstLine(Buffer &buf);
+	int parseHeaderLine(Buffer &buf);
+	int parseContent(Buffer &buf, unsigned int maxBodySize);
 	int readContent(Buffer &buf, unsigned int maxBodySize, int contentLength);
 	int readContentChunked(Buffer &buf, unsigned int maxBodySize);
 	std::string _method;
@@ -32,6 +41,7 @@ private:
 	std::vector<char> _content;
 	unsigned int _port;
 	u_int32_t _address;
+	unsigned int _errorCode;
 };
 
 #endif

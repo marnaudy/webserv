@@ -14,72 +14,18 @@ std::vector<std::string> split(std::string str) {
 	return (list);
 }
 
-std::string parseHeaderField(std::string &line) {
-	size_t end = line.find_first_of(" ");
-	std::string field = line.substr(0, end);
-	unsigned int i = 0;
-	while (i < field.length())
-	{
-		field[i] = tolower(field[i]);
-		i++;
-	}
-	return (field);
-}
-
-std::string parseHeaderValue(std::string &line) {
-	size_t start = line.find_first_of(" ", 0);
-	if (start == std::string::npos || line.length() == start + 1)
-		return (std::string());
-	return (line.substr(start + 1));
-}
-
 int Request::parse(Buffer &buf, unsigned int maxBodySize) {
 	buf.setPos(0);
 	int status;
-	std::string line = buf.getLine(status);
+	status = parseFirstLine(buf);
+	if (status < 0) 
+		return (status);
+	while (status == 0) {
+		status = parseHeaderLine(buf);
+	}
 	if (status < 0)
 		return (0);
-	std::vector<std::string> list = split(line);
-	if (list.size() != 3)
-		return (-400);
-	_method = list[0];
-	_uri = list[1];
-	_version = list[2];
-	line = buf.getLine(status);
-	while (status == 0 && line.length() != 0) {
-		std::string field = parseHeaderField(line);
-		if (field[field.length() - 1] != ':') {
-			line = buf.getLine(status);
-			continue;
-		}
-		field.erase(field.length() - 1);
-		std::string value = parseHeaderValue(line);
-		if (value.length() == 0) {
-			line = buf.getLine(status);
-			continue;
-		}
-		if (_headers.find(field) != _headers.end())
-			_headers.erase(field);
-		_headers.insert(std::pair<std::string, std::string>(field, value));
-		line = buf.getLine(status);
-	}
-	if (status != 0)
-		return (0);
-	if (_headers.find("content-length") != _headers.end()) {
-		std::string value = _headers.find("content-length")->second;
-		if (value.find_first_not_of("0123456789") == std::string::npos)
-			return (readContent(buf, maxBodySize, atoi(value.c_str())));
-		else
-			return (-400);
-	}
-	if (_headers.find("transfer-encoding") != _headers.end()) {
-		std::string value = _headers.find("transfer-encoding")->second;
-		if (value == "chunked")
-			return (readContentChunked(buf, maxBodySize));
-		else
-			return (-400);
-	}
-	return (buf.getPos());
+	return (parseContent(buf, maxBodySize));
 }
 
 void Request::print() {
@@ -116,6 +62,127 @@ std::string &Request::getURI() {
 
 std::string &Request::getVersion() {
 	return (_version);
+}
+
+unsigned int Request::getErrorCode() {
+	return (_errorCode);
+}
+
+void Request::setErrorCode(unsigned int code) {
+	_errorCode = code;
+}
+
+std::string parseHeaderField(std::string &line) {
+	size_t end = line.find_first_of(" ");
+	std::string field = line.substr(0, end);
+	unsigned int i = 0;
+	while (i < field.length())
+	{
+		field[i] = tolower(field[i]);
+		i++;
+	}
+	return (field);
+}
+
+std::string parseHeaderValue(std::string &line) {
+	size_t start = line.find_first_of(" ", 0);
+	if (start == std::string::npos || line.length() == start + 1)
+		return (std::string());
+	return (line.substr(start + 1));
+}
+
+int Request::checkMethod(std::string &meth) {
+	if (meth == "GET" || meth == "POST" || meth == "DELETE")
+		return (0);
+	if (meth == "HEAD" || meth == "PUT" || meth == "CONNECT" || meth == "OPTIONS" || meth == "TRACE" || meth == "PATCH")
+		return (-501);
+	return (-400);
+}
+
+int Request::checkURI(std::string &uri) {
+	if (uri.length() != 0 && uri[0] == '/')
+		return (0);
+	return (-400);
+}
+
+int Request::checkVersion(std::string &version) {
+	if (version == "HTTP/1.1")
+		return (0);
+	if (version == "HTTP/1.0" || version == "HTTP/0.9")
+		return (-505);
+	return (-400);
+}
+
+int Request::checkFirstLine(std::string line) {
+	std::vector<std::string> list = split(line);
+	if (list.size() != 3)
+		return (-400);
+	int ret = checkMethod(list[0]);
+	if (ret < 0)
+		return (ret);
+	_method = list[0];
+	ret = checkURI(list[1]);
+	if (ret < 0)
+		return (ret);
+	_uri = list[1];
+	ret = checkVersion(list[2]);
+	if (ret < 0)
+		return (ret);	
+	_version = list[2];
+	return (0);
+}
+
+int Request::parseFirstLine(Buffer &buf) {
+	int status;
+	std::string line = buf.getLine(status);
+	if (status < 0)
+		return (0);
+	status = checkFirstLine(line);
+	if (status < 0)
+		return (status);
+	return (buf.getPos());
+}
+
+int Request::parseHeaderLine(Buffer &buf) {
+	int status;
+	std::string line = buf.getLine(status);
+	if (status != 0)
+		return (-1);
+	if (line.length() == 0)
+		return (1);
+	std::string field = parseHeaderField(line);
+	if (field[field.length() - 1] != ':') {
+		line = buf.getLine(status);
+		return (0);
+	}
+	field.erase(field.length() - 1);
+	std::string value = parseHeaderValue(line);
+	if (value.length() == 0) {
+		line = buf.getLine(status);
+		return (0);
+	}
+	if (_headers.find(field) != _headers.end())
+		_headers.erase(field);
+	_headers.insert(std::pair<std::string, std::string>(field, value));
+	return (0);
+}
+
+int Request::parseContent(Buffer &buf, unsigned int maxBodySize) {
+	if (_headers.find("content-length") != _headers.end()) {
+		std::string value = _headers.find("content-length")->second;
+		if (value.find_first_not_of("0123456789") == std::string::npos)
+			return (readContent(buf, maxBodySize, atoi(value.c_str())));
+		else
+			return (-400);
+	}
+	if (_headers.find("transfer-encoding") != _headers.end()) {
+		std::string value = _headers.find("transfer-encoding")->second;
+		if (value == "chunked")
+			return (readContentChunked(buf, maxBodySize));
+		else
+			return (-400);
+	}
+	return (buf.getPos());
 }
 
 int Request::readContent(Buffer &buf, unsigned int maxBodySize, int contentLength) {

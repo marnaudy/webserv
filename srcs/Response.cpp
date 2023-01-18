@@ -78,6 +78,11 @@ unsigned int Response::getCode() {
 	return (_code);
 }
 
+void Response::printContent() {
+	write(1, &_content[0], _content.size());
+	std::cout << std::endl;
+}
+
 void Response::addHeader(std::string field, std::string value) {
 	if (_headers.find(field) != _headers.end())
 		_headers.erase(field);
@@ -89,10 +94,10 @@ void Response::readFileContent(std::ifstream &ifs) {
 	std::ostringstream ss;
 	_content = std::vector<char>();
 	while (!ifs.eof()) {
-		ifs >> c;
-		_content.push_back(c);
+		c = ifs.get();
+		if (c != EOF)
+			_content.push_back(c);
 	}
-	ss << _content.size();
 	_headers["content-length"] = ss.str();
 }
 

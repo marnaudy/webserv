@@ -119,7 +119,8 @@ void Location::handleRequest(Request &req, Response &res) {
 		return;
 	}
 	//GET only
-	std::string fileName = _root + req.getURI().substr(_name.length());
+	std::string fileName = _root + "/" + req.getURI().substr(_name.length());
+	std::cout << fileName << std::endl;
 	std::ifstream ifs(fileName.c_str());
 	if (!ifs.is_open() || ifs.fail()) {
 		res.setCode(404);
@@ -127,7 +128,9 @@ void Location::handleRequest(Request &req, Response &res) {
 	}
 	res.readFileContent(ifs);
 	res.setContentType(fileName);
+	res.setCode(200);
 	ifs.close();
+	res.printContent();
 }
 
 std::string parseDirective(std::string &line) {

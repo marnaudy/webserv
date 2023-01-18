@@ -6,6 +6,8 @@
 #include <map>
 #include <sstream>
 #include <fstream>
+#include <iostream>
+#include <unistd.h>
 
 class Response {
 public:
@@ -14,6 +16,7 @@ public:
 	~Response();
 	void setCode(unsigned int code);
 	unsigned int getCode();
+	void printContent();
 	void addHeader(std::string field, std::string value);
 	void readFileContent(std::ifstream &ifs);
 	void setContentType(std::string fileName);
