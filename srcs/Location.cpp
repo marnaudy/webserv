@@ -195,14 +195,30 @@ void Location::handleGet(Request &req, Response &res) {
 }
 
 void Location::handlePost(Request &req, Response &res) {
-	std::cout << "POST" << std::endl;
-	(void) req;
+	std::cout << "POST : " << getFileName(req.getURI()) << std::endl;
+	if (!_allowUpload) {
+		res.setCode(403);
+		return;
+	}
+	std::string length = req.getHeader("content-length");
+	if (length.length() == 0 || atoi(length.c_str()) == 0) {
+		res.setCode(411);
+		return;
+	}
+	std::string fileName = getFileName(req.getURI());
+	std::ofstream ofs(fileName.c_str());
+	if (!ofs.is_open() || ofs.fail()) {
+		res.setCode(403);
+		return;
+	}
+	ofs.write(req.getContent(), req.getContentSize());
+	ofs.close();
 	res.setCode(200);
 }
 
 void Location::handleDelete(Request &req, Response &res) {
 	std::cout << "DELETE" << std::endl;
-	(void) req;
+	std::string fileName = getFileName(req.getURI());
 	res.setCode(200);
 }
 

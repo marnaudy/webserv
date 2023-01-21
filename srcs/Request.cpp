@@ -73,6 +73,14 @@ void Request::setErrorCode(unsigned int code) {
 	_errorCode = code;
 }
 
+char *Request::getContent() {
+	return (&_content[0]);
+}
+
+unsigned int Request::getContentSize() {
+	return (_content.size());
+}
+
 std::string parseHeaderField(std::string &line) {
 	size_t end = line.find_first_of(" ");
 	std::string field = line.substr(0, end);

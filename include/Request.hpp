@@ -24,6 +24,8 @@ public:
 	std::string &getVersion();
 	unsigned int getErrorCode();
 	void setErrorCode(unsigned int code);
+	char *getContent();
+	unsigned int getContentSize();
 private:
 	int checkMethod(std::string &meth);
 	int checkURI(std::string &uri);
