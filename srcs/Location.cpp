@@ -108,9 +108,9 @@ void Location::print() {
 }
 
 unsigned int Location::match(std::string &uri) {
-	if (uri.find(_name) != 0 && (uri.length() == _name.length() || uri[_name.length()] == '/'))
-		return (0);
-	return (_name.length());
+	if (uri.find(_name) == 0 && (uri.length() == _name.length() || uri[_name.length()] == '/'))
+		return (_name.length());
+	return (0);
 }
 
 void Location::handleGetFile(Response &res, std::string fileName) {
@@ -170,8 +170,14 @@ void Location::handleGetDir(Response &res, std::string fileName, std::string &ur
 }
 
 void Location::handleGet(Request &req, Response &res) {
+	res.addHeader("cache-control", "no-cache");
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "GET file : " << fileName << std::endl;
+	if (_returnCode != 0) {
+		res.setCode(_returnCode);
+		res.addHeader("location", _returnDest);
+		return;
+	}
 	struct stat fileStat;
 	if (stat(fileName.c_str(), &fileStat) < 0) {
 		if (errno == ENOENT || errno == ENOTDIR)

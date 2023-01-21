@@ -45,7 +45,7 @@ Response *VirtualServer::handleRequest(Request &req) {
 		*res = Response(404);
 	else
 		chosenLocation->handleRequest(req, *res);
-	if (res->getCode() >= 400 && res->getCode() < 600)
+	if (res->getCode() >= 300 && res->getCode() < 600)
 		handleError(*res);
 	return (res);
 }
@@ -102,7 +102,7 @@ void VirtualServer::parseErrorPage(std::string value) {
 		end = value.find_first_of(" ", start);
 		std::string token = value.substr(start, end - start);
 		int errorCode = atoi(token.c_str());
-		if (errorCode >= 400 && errorCode < 600) {
+		if (errorCode >= 300 && errorCode < 600) {
 			if (_errorPages.find(errorCode) != _errorPages.end())
 				_errorPages.erase(errorCode);
 			_errorPages.insert(std::pair<unsigned int, std::string>(errorCode, pageName));

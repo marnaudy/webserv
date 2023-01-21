@@ -106,6 +106,7 @@ void Socket::readSocket(int epfd, Config &config) {
 		if (parse_len < 0) {
 			req.setErrorCode(-parse_len);
 			Response *res = config.handleRequest(req);
+			res->addHeader("connection", "close");
 			char *resBuffer;
 			size_t resSize = res->exprt(&resBuffer);
 			_writeBuffer.addToBuffer(resBuffer, resSize);
