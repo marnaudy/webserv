@@ -217,8 +217,17 @@ void Location::handlePost(Request &req, Response &res) {
 }
 
 void Location::handleDelete(Request &req, Response &res) {
-	std::cout << "DELETE" << std::endl;
 	std::string fileName = getFileName(req.getURI());
+	std::cout << "DELETE : " << fileName << std::endl;
+	struct stat fileStat;
+	if (stat(fileName.c_str(), &fileStat) < 0) {
+		res.setCode(404);
+		return;
+	}
+	if (unlink(fileName.c_str()) < 0) {
+		res.setCode(403);
+		return;
+	}
 	res.setCode(200);
 }
 
