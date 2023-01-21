@@ -2,12 +2,12 @@
 
 Request::Request(unsigned int port, u_int32_t address) : _port(port), _address(address), _errorCode(0) {}
 
-std::vector<std::string> split(std::string str) {
+std::vector<std::string> split(std::string str, char c) {
 	size_t end = 0;
 	size_t start = 0;
 	std::vector<std::string> list;
 	while (end != std::string::npos) {
-		end = str.find_first_of(" ", start);
+		end = str.find_first_of(c, start);
 		list.push_back(str.substr(start, end - start));
 		start = end + 1;
 	}
@@ -101,9 +101,19 @@ int Request::checkMethod(std::string &meth) {
 }
 
 int Request::checkURI(std::string &uri) {
-	if (uri.length() != 0 && uri[0] == '/')
-		return (0);
-	return (-400);
+	if (uri.length() == 0 || uri[0] != '/')
+		return (-400);
+	std::vector<std::string> list = split(uri, '/');
+	int count = 0;
+	for (std::vector<std::string>::iterator it = list.begin(); it != list.end(); ++it) {
+		if (*it == "..")
+			count--;
+		if (count < 0)
+			return (-400);
+		if (*it != "." && it->length() != 0)
+			count++;
+	}
+	return (0);
 }
 
 int Request::checkVersion(std::string &version) {
@@ -115,7 +125,7 @@ int Request::checkVersion(std::string &version) {
 }
 
 int Request::checkFirstLine(std::string line) {
-	std::vector<std::string> list = split(line);
+	std::vector<std::string> list = split(line, ' ');
 	if (list.size() != 3)
 		return (-400);
 	int ret = checkMethod(list[0]);

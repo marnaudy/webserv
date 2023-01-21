@@ -8,7 +8,7 @@ Location::Location(std::string name) :
 	_returnCode (0) {}
 
 void Location::checkConfig() {
-	if (_name.length() == 0 && _name[0] != '/')
+	if (_name.length() == 0 || _name[0] != '/')
 		throw BadConfigException("Location name not valid");
 	if (_root.length() == 0 && _returnCode == 0 && _returnDest.length() == 0)
 		throw BadConfigException("Location missing root");
@@ -108,7 +108,8 @@ void Location::print() {
 }
 
 unsigned int Location::match(std::string &uri) {
-	if (uri.find(_name) == 0 && (uri.length() == _name.length() || uri[_name.length()] == '/'))
+	if (uri.find(_name) == 0 && (uri.length() == _name.length()
+		|| uri[_name.length()] == '/' || _name[_name.length() - 1] == '/'))
 		return (_name.length());
 	return (0);
 }
