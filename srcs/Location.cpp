@@ -170,78 +170,107 @@ void Location::handleGetDir(Response &res, std::string fileName, std::string &ur
 	handleGetFile(res, fileName);
 }
 
-void Location::handleGet(Request &req, Response &res) {
-	res.addHeader("cache-control", "no-cache");
+responseCgi Location::handleCgi(Request &req, char **envp) {
+	std::string fileName = getFileName(req.getURI());
+	responseCgi ret;
+	ret.cgi = new CgiHandler;
+	ret.isResponse = false;
+	std::string ext = fileName.substr(fileName.find_last_of("."));
+	ret.cgi->exec(req, _cgi[ext], envp);
+	return (ret);
+}
+
+responseCgi Location::handleGet(Request &req, char **envp) {
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "GET file : " << fileName << std::endl;
+	responseCgi ret;
+	std::string ext = fileName.substr(fileName.find_last_of("."));
+	if (_cgi[ext].length() != 0)
+		return (handleCgi(req, envp));
+	ret.isResponse = true;
+	ret.response = new Response;
+	ret.response->addHeader("cache-control", "no-cache");
 	if (_returnCode != 0) {
-		res.setCode(_returnCode);
-		res.addHeader("location", _returnDest);
-		return;
+		ret.response->setCode(_returnCode);
+		ret.response->addHeader("location", _returnDest);
+		return (ret);
 	}
 	struct stat fileStat;
 	if (stat(fileName.c_str(), &fileStat) < 0) {
 		if (errno == ENOENT || errno == ENOTDIR)
-			res.setCode(404);
+			ret.response->setCode(404);
 		else
-			res.setCode(403);
-		return;
+			ret.response->setCode(403);
+		return (ret);
 	}
 	if (S_ISDIR(fileStat.st_mode)) {
-		handleGetDir(res, fileName, req.getURI());
-		return;
+		handleGetDir(*ret.response, fileName, req.getURI());
+		return (ret);
 	}
-	handleGetFile(res, fileName);
+	handleGetFile(*ret.response, fileName);
+	return (ret);
 }
 
-void Location::handlePost(Request &req, Response &res) {
-	std::cout << "POST : " << getFileName(req.getURI()) << std::endl;
+responseCgi Location::handlePost(Request &req, char **envp) {
+	std::string fileName = getFileName(req.getURI());
+	responseCgi ret;
+	std::cout << "POST : " << fileName << std::endl;
+	std::string ext = fileName.substr(fileName.find_last_of("."));
+	if (_cgi[ext].length() != 0)
+		return (handleCgi(req, envp));
+	ret.isResponse = true;
+	ret.response = new Response;
 	if (!_allowUpload) {
-		res.setCode(403);
-		return;
+		ret.response->setCode(403);
+		return (ret);
 	}
 	std::string length = req.getHeader("content-length");
 	if (length.length() == 0 || atoi(length.c_str()) == 0) {
-		res.setCode(411);
-		return;
+		ret.response->setCode(411);
+		return (ret);
 	}
-	std::string fileName = getFileName(req.getURI());
 	std::ofstream ofs(fileName.c_str());
 	if (!ofs.is_open() || ofs.fail()) {
-		res.setCode(403);
-		return;
+		ret.response->setCode(403);
+		return (ret);
 	}
 	ofs.write(req.getContent(), req.getContentSize());
 	ofs.close();
-	res.setCode(200);
+	ret.response->setCode(200);
+	return (ret);
 }
 
-void Location::handleDelete(Request &req, Response &res) {
+responseCgi Location::handleDelete(Request &req) {
+	responseCgi ret;
+	ret.isResponse = true;
+	ret.response = new Response;
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "DELETE : " << fileName << std::endl;
 	struct stat fileStat;
 	if (stat(fileName.c_str(), &fileStat) < 0) {
-		res.setCode(404);
-		return;
+		ret.response->setCode(404);
+		return (ret);
 	}
 	if (unlink(fileName.c_str()) < 0) {
-		res.setCode(403);
-		return;
+		ret.response->setCode(403);
+		return (ret);
 	}
-	res.setCode(200);
+	ret.response->setCode(200);
+	return (ret);
 }
 
-void Location::handleRequest(Request &req, Response &res) {
+responseCgi Location::handleRequest(Request &req, char**envp) {
 	if (std::find(_allowMeth.begin(), _allowMeth.end(), req.getMethod()) == _allowMeth.end()) {
-		res.setCode(405);
-		return;
+		responseCgi ret;
+		ret.isResponse = true;
+		ret.response = new Response(405);
+		return (ret);
 	}
 	if (req.getMethod() == "GET")
-		handleGet(req, res);
+		return (handleGet(req, envp));
 	if (req.getMethod() == "POST")
-		handlePost(req, res);
-	if (req.getMethod() == "DELETE")
-		handleDelete(req, res);
+		return (handlePost(req, envp));
+	return (handleDelete(req));
 }
 
 std::string Location::getFileName(std::string &uri) {

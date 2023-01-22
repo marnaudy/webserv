@@ -32,7 +32,7 @@ std::map<unsigned int,std::list<addressInfo> > Config::getPortList() {
 	return (portList);
 }
 
-Response *Config::handleRequest(Request &req) {
+responseCgi Config::handleRequest(Request &req, char **envp) {
 	unsigned int port = req.getPort();
 	u_int32_t addr = req.getAddress();
 	std::string host = req.getHeader("host");
@@ -49,7 +49,7 @@ Response *Config::handleRequest(Request &req) {
 	}
 	if (chosenServer == NULL)
 		throw BadConfigException("Request doesn't match any server");
-	return (chosenServer->handleRequest(req));
+	return (chosenServer->handleRequest(req, envp));
 }
 
 void Config::parse(std::ifstream &ifs) {

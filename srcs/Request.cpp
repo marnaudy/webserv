@@ -53,6 +53,10 @@ std::string &Request::getHeader(std::string field) {
 	return (_headers[field]);
 }
 
+std::map<std::string, std::string> &Request::getHeaders() {
+	return (_headers);
+}
+
 std::string &Request::getMethod() {
 	return (_method);
 }

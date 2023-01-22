@@ -8,7 +8,8 @@ SRCS		=	srcs/main.cpp \
 				srcs/Buffer.cpp \
 				srcs/Socket.cpp \
 				srcs/Server.cpp \
-				srcs/Request.cpp
+				srcs/Request.cpp \
+				srcs/CgiHandler.cpp
 
 
 OBJS		=	${SRCS:.cpp=.o}
@@ -21,7 +22,8 @@ HEADERS 	=	include/Config.hpp \
 				include/Socket.hpp \
 				include/Server.hpp \
 				include/Request.hpp \
-				include/webserv.hpp
+				include/webserv.hpp \
+				include/CgiHandler.hpp
 
 CXX			=	c++
 

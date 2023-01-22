@@ -91,7 +91,7 @@ void Socket::openSocket() {
 		throw SocketException("Error listen");
 }
 
-void Socket::readSocket(int epfd, Config &config) {
+void Socket::readSocket(int epfd, Config &config, char **envp) {
 	std::cout << "READING" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
@@ -105,13 +105,15 @@ void Socket::readSocket(int epfd, Config &config) {
 	while (parse_len != 0) {
 		if (parse_len < 0) {
 			req.setErrorCode(-parse_len);
-			Response *res = config.handleRequest(req);
-			res->addHeader("connection", "close");
+			responseCgi ret = config.handleRequest(req, envp);
+			if (!ret.isResponse)
+				throw SocketException("Bad request lead to a cgi response");
+			ret.response->addHeader("connection", "close");
 			char *resBuffer;
-			size_t resSize = res->exprt(&resBuffer);
+			size_t resSize = ret.response->exprt(&resBuffer);
 			_writeBuffer.addToBuffer(resBuffer, resSize);
 			delete[] resBuffer;
-			delete res;
+			delete ret.response;
 			_closeAfterWrite = true;
 			std::cout << "set close after write" << std::endl;
 			epoll_event ev;
@@ -123,17 +125,31 @@ void Socket::readSocket(int epfd, Config &config) {
 		}
 		_readBuffer.erase(parse_len);
 		req.print();
-		Response *res = config.handleRequest(req);
-		char *resBuffer;
-		size_t resSize = res->exprt(&resBuffer);
-		_writeBuffer.addToBuffer(resBuffer, resSize);
-		delete[] resBuffer;
-		delete res;
-		epoll_event ev;
-		ev.data.ptr = this;
-		ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
-		if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
-			throw SocketException("Error epoll mod");
+		responseCgi ret = config.handleRequest(req, envp);
+		if (ret.isResponse) {
+			char *resBuffer;
+			size_t resSize = ret.response->exprt(&resBuffer);
+			_writeBuffer.addToBuffer(resBuffer, resSize);
+			delete[] resBuffer;
+			delete ret.response;
+			epoll_event ev;
+			ev.data.ptr = this;
+			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
+			if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
+				throw SocketException("Error epoll mod");
+		} else {
+			std::list<CgiHandler>::iterator it = _cgiHandlers.insert(_cgiHandlers.end(), *ret.cgi);
+			delete ret.cgi;
+			it->setSockAddr(this);
+			epoll_event ev;
+			ev.data.ptr = &*it;
+			ev.events = EPOLLIN | EPOLLRDHUP;
+			if (epoll_ctl(epfd, EPOLL_CTL_ADD, it->getFdIn(), &ev) < 0)
+				throw SocketException("Error epoll add");
+			ev.events = EPOLLOUT | EPOLLRDHUP;
+			if (epoll_ctl(epfd, EPOLL_CTL_MOD, it->getFdOut(), &ev) < 0)
+				throw SocketException("Error epoll add");
+		}
 		req = Request(_port, _address);
 		parse_len = req.parse(_readBuffer, _maxBodySize);
 	}

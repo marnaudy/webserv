@@ -16,7 +16,7 @@ public:
 	void parse(std::ifstream &ifs);
 	void print();
 	void checkConfig();
-	Response *handleRequest(Request &req);
+	responseCgi handleRequest(Request &req, char**envp);
 	void handleError(Response &res);
 private:
 	void parseErrorPage(std::string value);

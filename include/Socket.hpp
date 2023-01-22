@@ -20,18 +20,18 @@
 
 #define MAX_QUEUE 10
 
-class Socket {
+class Socket : public Bidon {
 public:
 	Socket(unsigned int port, std::list<addressInfo> addressList);
 	Socket(unsigned int port, u_int32_t address, int fd, unsigned int maxBodySize);
 	Socket(const Socket &other);
-	~Socket();
+	virtual ~Socket();
 	int getFd();
 	void setFd(int fd);
 	bool isClientSocket();
 	void acceptConnection(std::list<Socket> &vec, int epfd);
 	void openSocket();
-	void readSocket(int epfd, Config &config);
+	void readSocket(int epfd, Config &config, char **envp);
 	int writeSocket(int epfd);
 	void closeSocket(int epfd);
 private:
@@ -44,6 +44,7 @@ private:
 	unsigned int _maxBodySize;
 	bool _isClientSocket;
 	bool _closeAfterWrite;
+	std::list<CgiHandler> _cgiHandlers;
 };
 
 class SocketException : public std::exception {

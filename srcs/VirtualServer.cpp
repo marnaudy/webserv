@@ -24,12 +24,13 @@ void VirtualServer::checkConfig() {
 		throw BadConfigException("Invalid port");
 }
 
-Response *VirtualServer::handleRequest(Request &req) {
-	Response *res = new Response();
+responseCgi VirtualServer::handleRequest(Request &req, char**envp) {
+	responseCgi ret;
 	if (req.getErrorCode() != 0) {
-		res->setCode(req.getErrorCode());
-		handleError(*res);
-		return (res);
+		ret.isResponse = true;
+		ret.response = new Response(req.getErrorCode());
+		handleError(*ret.response);
+		return (ret);
 	}
 	std::string uri = req.getURI();
 	Location *chosenLocation = NULL;
@@ -41,13 +42,17 @@ Response *VirtualServer::handleRequest(Request &req) {
 			chosenLocation = &*it;
 		}
 	}
-	if (chosenLocation == NULL)
-		*res = Response(404);
+	if (chosenLocation == NULL){
+		ret.isResponse = true;
+		ret.response = new Response(404);
+		handleError(*ret.response);
+		return (ret);
+	}
 	else
-		chosenLocation->handleRequest(req, *res);
-	if (res->getCode() >= 300 && res->getCode() < 600)
-		handleError(*res);
-	return (res);
+		ret = chosenLocation->handleRequest(req, envp);
+	if (ret.isResponse && ret.response->getCode() >= 300 && ret.response->getCode() < 600)
+		handleError(*ret.response);
+	return (ret);
 }
 
 void VirtualServer::handleError(Response &res) {

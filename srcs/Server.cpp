@@ -35,7 +35,39 @@ void Server::closeSocket(Socket &sock) {
 	}
 }
 
-void Server::run() {
+void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
+	if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
+		closeSocket(*sock);
+		return;
+	}
+	if (sock->isClientSocket() && event & EPOLLOUT) {
+		if (sock->writeSocket(_epfd) != 0) {
+			closeSocket(*sock);
+			return;
+		}
+	}
+	if (sock->isClientSocket() && event & EPOLLIN)
+		sock->readSocket(_epfd, _config, envp);
+	if (!sock->isClientSocket() && event & EPOLLIN)
+		sock->acceptConnection(_sockets, _epfd);
+}
+
+void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
+	(void) cgi;
+	if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
+		//Close cgi handler
+		return;
+	}
+	if (event & EPOLLOUT) {
+		//Write to CGI
+		return;
+	}
+	if (event & EPOLLIN)
+		//Read from CGI
+		return;
+}
+
+void Server::run(char **envp) {
 	openSockets();
 	epoll_event evs[MAX_EVENTS];
 	while (1) {
@@ -44,21 +76,13 @@ void Server::run() {
 		if (nbEvents < 0)
 			throw SocketException("Error epoll wait");
 		for (int i = 0; i < nbEvents; ++i) {
-			Socket *sock = reinterpret_cast<Socket *>(evs[i].data.ptr);
-			if (evs[i].events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
-				closeSocket(*sock);
-				break;
-			}
-			if (sock->isClientSocket() && evs[i].events & EPOLLOUT) {
-				if (sock->writeSocket(_epfd) != 0) {
-					closeSocket(*sock);
-					break;
-				}
-			}
-			if (sock->isClientSocket() && evs[i].events & EPOLLIN)
-				sock->readSocket(_epfd, _config);
-			if (!sock->isClientSocket() && evs[i].events & EPOLLIN)
-				sock->acceptConnection(_sockets, _epfd);
+			Bidon *bid = reinterpret_cast<Bidon *>(evs[i].data.ptr);
+			Socket *sock = dynamic_cast<Socket *>(bid);
+			CgiHandler *cgi = dynamic_cast<CgiHandler *>(bid);
+			if (sock != NULL)
+				dealSocketEvent(sock, evs[i].events, envp);
+			else
+				dealCgiEvent(cgi, evs[i].events);
 		}
 	}
 }

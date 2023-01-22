@@ -11,7 +11,7 @@ public:
 	~Config() {}
 	void print();
 	std::map<unsigned int,std::list<addressInfo> > getPortList();
-	Response *handleRequest(Request &req);
+	responseCgi handleRequest(Request &req, char **envp);
 private:
 	void parse(std::ifstream &ifs);
 	std::list<VirtualServer> _servers;

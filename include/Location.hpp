@@ -14,6 +14,13 @@
 #include <sys/types.h>
 #include "Request.hpp"
 #include "Response.hpp"
+#include "CgiHandler.hpp"
+
+struct responseCgi {
+	bool isResponse;
+	Response *response;
+	CgiHandler *cgi;
+};
 
 class Location {
 public:
@@ -26,10 +33,11 @@ public:
 	void handleDirList(Response &res, std::string dirName, std::string &uri);
 	void handleGetFile(Response &res, std::string fileName);
 	void handleGetDir(Response &res, std::string fileName, std::string &uri);
-	void handleGet(Request &req, Response &res);
-	void handlePost(Request &req, Response &res);
-	void handleDelete(Request &req, Response &res);
-	void handleRequest(Request &req, Response &res);
+	responseCgi handleCgi(Request &req, char** envp);
+	responseCgi handleGet(Request &req, char** envp);
+	responseCgi handlePost(Request &req, char** envp);
+	responseCgi handleDelete(Request &req);
+	responseCgi handleRequest(Request &req, char**envp);
 	std::string getFileName(std::string &uri);
 private:
 	void parseMeth(std::string value);

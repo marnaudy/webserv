@@ -19,6 +19,7 @@ public:
 	unsigned int getPort();
 	u_int32_t getAddress();
 	std::string &getHeader(std::string field);
+	std::map<std::string, std::string> &getHeaders();
 	std::string &getMethod();
 	std::string &getURI();
 	std::string &getVersion();
