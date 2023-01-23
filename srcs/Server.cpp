@@ -70,7 +70,7 @@ void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 void Server::run(char **envp) {
 	openSockets();
 	epoll_event evs[MAX_EVENTS];
-	while (1) {
+	while (g_running) {
 		int nbEvents = epoll_wait(_epfd, evs, MAX_EVENTS, -1);
 		std::cout << "Processing events : " << nbEvents << std::endl;
 		if (nbEvents < 0)

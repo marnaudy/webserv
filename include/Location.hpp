@@ -39,9 +39,11 @@ public:
 	responseCgi handleDelete(Request &req);
 	responseCgi handleRequest(Request &req, char**envp);
 	std::string getFileName(std::string &uri);
+	void setServAddr(VirtualServer *servAddr);
 private:
 	void parseMeth(std::string value);
 	void parseCGI(std::string value);
+	std::string getCgiExt(std::string &uri);
 
 	std::string _name;
 	std::string _root;
@@ -53,6 +55,7 @@ private:
 	std::map<std::string, std::string> _cgi;
 	unsigned int _returnCode;
 	std::string _returnDest;
+	VirtualServer *_servAddr;
 };
 
 class BadConfigException : public std::exception {

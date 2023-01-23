@@ -171,21 +171,47 @@ void Location::handleGetDir(Response &res, std::string fileName, std::string &ur
 }
 
 responseCgi Location::handleCgi(Request &req, char **envp) {
-	std::string fileName = getFileName(req.getURI());
 	responseCgi ret;
 	ret.cgi = new CgiHandler;
 	ret.isResponse = false;
-	std::string ext = fileName.substr(fileName.find_last_of("."));
-	ret.cgi->exec(req, _cgi[ext], envp);
+	std::string ext = getCgiExt(req.getURI());
+	ret.cgi->setServAddr(_servAddr);
+	ret.cgi->parseUri(req.getURI(), ext);
+	std::string script = ret.cgi->getScriptName();
+	ret.cgi->setScriptPath(getFileName(script));
+	try {
+		ret.cgi->exec(req, _cgi[ext], envp);
+	} catch (std::exception &e) {
+		if (ret.cgi->getPid() < 0)
+			g_running = false;
+		std::cerr << "Cgi error: " << e.what() << std::endl;
+		delete ret.cgi;
+		ret.isResponse = true;
+		ret.response = new Response(500);
+	}
 	return (ret);
+}
+
+std::string Location::getCgiExt(std::string &uri) {
+	std::vector<std::string> splitUri = split(uri, '/');
+	for (std::vector<std::string>::iterator it = splitUri.begin(); it != splitUri.end(); ++it) {
+		size_t pos = it->length();
+		std::string ext;
+		do {
+			pos = it->find_last_of("?", pos - 1);
+			ext = it->substr(it->find_last_of(".", pos));
+			if (_cgi[ext].length() != 0)
+				return (ext);
+		} while (pos != std::string::npos);
+	}
+	return ("");
 }
 
 responseCgi Location::handleGet(Request &req, char **envp) {
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "GET file : " << fileName << std::endl;
 	responseCgi ret;
-	std::string ext = fileName.substr(fileName.find_last_of("."));
-	if (_cgi[ext].length() != 0)
+	if (getCgiExt(req.getURI()).length() != 0)
 		return (handleCgi(req, envp));
 	ret.isResponse = true;
 	ret.response = new Response;
@@ -215,8 +241,7 @@ responseCgi Location::handlePost(Request &req, char **envp) {
 	std::string fileName = getFileName(req.getURI());
 	responseCgi ret;
 	std::cout << "POST : " << fileName << std::endl;
-	std::string ext = fileName.substr(fileName.find_last_of("."));
-	if (_cgi[ext].length() != 0)
+	if (getCgiExt(req.getURI()).length() != 0)
 		return (handleCgi(req, envp));
 	ret.isResponse = true;
 	ret.response = new Response;
@@ -275,6 +300,10 @@ responseCgi Location::handleRequest(Request &req, char**envp) {
 
 std::string Location::getFileName(std::string &uri) {
 	return (_root + "/" + uri.substr(_name.length()));
+}
+
+void Location::setServAddr(VirtualServer *addr) {
+	_servAddr = addr;
 }
 
 std::string parseDirective(std::string &line) {

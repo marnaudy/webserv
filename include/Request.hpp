@@ -8,6 +8,7 @@
 #include <cstdlib>
 #include <unistd.h>
 #include "Buffer.hpp"
+#include "webserv.hpp"
 
 class Request {
 public:

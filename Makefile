@@ -9,7 +9,8 @@ SRCS		=	srcs/main.cpp \
 				srcs/Socket.cpp \
 				srcs/Server.cpp \
 				srcs/Request.cpp \
-				srcs/CgiHandler.cpp
+				srcs/CgiHandler.cpp \
+				srcs/helper.cpp
 
 
 OBJS		=	${SRCS:.cpp=.o}

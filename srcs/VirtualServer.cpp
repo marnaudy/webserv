@@ -139,6 +139,7 @@ void VirtualServer::parse(std::ifstream &ifs) {
 			std::string name = parseValue(line);
 			Location newLoc(name);
 			newLoc.parse(ifs);
+			newLoc.setServAddr(this);
 			_locations.push_back(newLoc);
 		} else {
 			throw BadConfigException("Unknown server directive");
