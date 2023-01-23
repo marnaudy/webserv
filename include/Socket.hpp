@@ -34,6 +34,8 @@ public:
 	void readSocket(int epfd, Config &config, char **envp);
 	int writeSocket(int epfd);
 	void closeSocket(int epfd);
+	Buffer *getWriteBuffer();
+	void removeCgi(CgiHandler *ptr);
 private:
 	unsigned int _port;
 	std::list<addressInfo> _addressList;

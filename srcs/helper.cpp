@@ -12,3 +12,17 @@ std::vector<std::string> split(std::string str, char c) {
 	return (list);
 }
 
+std::string toUpper(std::string str) {
+	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
+		*it = toupper(*it);
+	}
+	return (str);
+}
+
+std::string toLower(std::string str) {
+	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
+		*it = tolower(*it);
+	}
+	return (str);
+}
+

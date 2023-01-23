@@ -89,6 +89,10 @@ void Response::addHeader(std::string field, std::string value) {
 	_headers.insert(std::pair<std::string, std::string>(field, value));
 }
 
+void Response::addHeaderLine(std::string line) {
+	_headerLines.push_back(line);
+}
+
 void Response::readFileContent(std::ifstream &ifs) {
 	char c;
 	std::ostringstream ss;
@@ -104,6 +108,14 @@ void Response::readFileContent(std::ifstream &ifs) {
 
 void Response::setContent(std::string &str) {
 	_content.insert(_content.begin(), str.begin(), str.end());
+	std::ostringstream ss;
+	ss << _content.size();
+	_headers["content-length"] = ss.str();
+}
+
+void Response::setContent(char *buf, size_t size) {
+	for (unsigned int i = 0; i < size; i++)
+		_content.push_back(buf[i]);
 	std::ostringstream ss;
 	ss << _content.size();
 	_headers["content-length"] = ss.str();
@@ -268,6 +280,9 @@ size_t Response::exprt(char **buffer) {
 	message = "HTTP/1.1 " + ss.str() + " " + _message + "\r\n";
 	for (std::map<std::string, std::string>::iterator it = _headers.begin(); it != _headers.end(); ++it) {
 		message += it->first + ": " + it->second + "\r\n";
+	}
+	for (unsigned int i = 0; i < _headerLines.size(); ++i) {
+		message += _headerLines[i] + "\r\n";
 	}
 	message += "\r\n";
 	size_t size = message.length() + _content.size();

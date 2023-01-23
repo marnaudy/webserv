@@ -36,6 +36,20 @@ std::string Buffer::getLine(int &status) {
 	return (std::string());
 }
 
+std::string Buffer::getLine2(int &status) {
+	size_t oldPos = _pos;
+	while (_pos < _size) {
+		if (_content[_pos] == '\n') {
+			status = 0;
+			_pos++;
+			return (std::string(&_content[oldPos], _pos - 1 - oldPos));
+		}
+		_pos++;
+	}
+	status = -1;
+	return (std::string());
+}
+
 void Buffer::addToBuffer(char *toAdd, size_t sizeAdd) {
 	char *newContent = new char[_size + sizeAdd]();
 	for (unsigned int i = 0; i < _size; ++i) {

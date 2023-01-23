@@ -18,14 +18,17 @@ public:
 	unsigned int getCode();
 	void printContent();
 	void addHeader(std::string field, std::string value);
+	void addHeaderLine(std::string line);
 	void readFileContent(std::ifstream &ifs);
 	void setContent(std::string &str);
+	void setContent(char *buf, size_t size);
 	void setContentType(std::string fileName);
 	size_t exprt(char **buffer);
 private:
 	unsigned int _code;
 	std::string _message;
 	std::map<std::string, std::string> _headers;
+	std::vector<std::string> _headerLines;
 	std::vector<char> _content;
 };
 

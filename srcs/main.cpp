@@ -1,5 +1,7 @@
 #include "Server.hpp"
 
+bool g_running = true;
+
 int main(int argc, char **argv, char **envp)
 {
 	(void)argc;

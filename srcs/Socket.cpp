@@ -141,14 +141,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 			std::list<CgiHandler>::iterator it = _cgiHandlers.insert(_cgiHandlers.end(), *ret.cgi);
 			delete ret.cgi;
 			it->setSockAddr(this);
-			epoll_event ev;
-			ev.data.ptr = &*it;
-			ev.events = EPOLLIN | EPOLLRDHUP;
-			if (epoll_ctl(epfd, EPOLL_CTL_ADD, it->getFdIn(), &ev) < 0)
-				throw SocketException("Error epoll add");
-			ev.events = EPOLLOUT | EPOLLRDHUP;
-			if (epoll_ctl(epfd, EPOLL_CTL_MOD, it->getFdOut(), &ev) < 0)
-				throw SocketException("Error epoll add");
+			it->updateEpoll(epfd);
 		}
 		req = Request(_port, _address);
 		parse_len = req.parse(_readBuffer, _maxBodySize);
@@ -179,6 +172,19 @@ void Socket::closeSocket(int epfd) {
 		throw SocketException("Error epoll del");
 	}
 	close(_fd);
+}
+
+Buffer *Socket::getWriteBuffer() {
+	return (&_writeBuffer);
+}
+
+void Socket::removeCgi(CgiHandler *ptr) {
+	for (std::list<CgiHandler>::iterator it = _cgiHandlers.begin(); it != _cgiHandlers.end(); it++) {
+		if (&(*it) == ptr) {
+			_cgiHandlers.erase(it);
+			return;
+		}
+	}
 }
 
 SocketException::SocketException(std::string message) : _message(message) {}

@@ -1,5 +1,5 @@
-#ifndef WEBSER_HPP
-#define WEBSER_HPP
+#ifndef WEBSERV_HPP
+#define WEBSERV_HPP
 
 #include <cstdlib>
 #include <vector>
@@ -11,7 +11,9 @@ typedef struct addressInfo {
 } addressInfo;
 
 std::vector<std::string> split(std::string str, char c);
+std::string toUpper(std::string str);
+std::string toLower(std::string str);
 
-bool g_running = true;
+extern bool g_running;
 
 #endif

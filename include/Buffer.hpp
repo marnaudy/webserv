@@ -15,6 +15,7 @@ public:
 	size_t getPos();
 	void setPos(size_t pos);
 	std::string getLine(int &status);
+	std::string getLine2(int &status);
 	void addToBuffer(char *toAdd, size_t sizeAdd);
 	void erase(size_t len);
 private:

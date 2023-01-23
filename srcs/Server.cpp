@@ -53,18 +53,16 @@ void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 }
 
 void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
-	(void) cgi;
 	if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
 		//Close cgi handler
 		return;
 	}
 	if (event & EPOLLOUT) {
-		//Write to CGI
+		cgi->writeToCgi(_epfd);
 		return;
 	}
 	if (event & EPOLLIN)
-		//Read from CGI
-		return;
+		cgi->readFromCgi(_epfd);
 }
 
 void Server::run(char **envp) {

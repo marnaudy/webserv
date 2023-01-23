@@ -179,8 +179,17 @@ responseCgi Location::handleCgi(Request &req, char **envp) {
 	ret.cgi->parseUri(req.getURI(), ext);
 	std::string script = ret.cgi->getScriptName();
 	ret.cgi->setScriptPath(getFileName(script));
+	ret.cgi->setBin(_cgi[ext]);
+	ret.cgi->addBody(req.getContent(), req.getContentSize());
+	int error = ret.cgi->checkCgi();
+	if (error != 0) {
+		delete ret.cgi;
+		ret.isResponse = true;
+		ret.response = new Response(error);
+		return (ret);
+	}
 	try {
-		ret.cgi->exec(req, _cgi[ext], envp);
+		ret.cgi->exec(req, envp);
 	} catch (std::exception &e) {
 		if (ret.cgi->getPid() < 0)
 			g_running = false;

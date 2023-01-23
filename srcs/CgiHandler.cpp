@@ -1,4 +1,5 @@
 #include "CgiHandler.hpp"
+#include "Socket.hpp"
 
 int CgiHandler::getFdIn() {
 	return (_fdIn);
@@ -28,6 +29,14 @@ void CgiHandler::setScriptPath(std::string path) {
 	_scriptPath = path;
 }
 
+void CgiHandler::setBin(std::string &bin) {
+	_bin = bin;
+}
+
+void CgiHandler::addBody(char *body, size_t size) {
+	_bufferIn.addToBuffer(body, size);
+}
+
 void CgiHandler::importEnv(char **env) {
 	int i = 0;
 	while (env && env[i]) {
@@ -39,10 +48,10 @@ void CgiHandler::importEnv(char **env) {
 char **CgiHandler::exportEnv() {
 	char **envp;
 	envp = new char *[_env.size() + 1];
-	for (int i = 0; i < _env.size(); ++i) {
+	for (unsigned int i = 0; i < _env.size(); ++i) {
 		envp[i] = strdup(_env[i].c_str());
 		if (envp[i] == NULL) {
-			int j = 0;
+			unsigned int j = 0;
 			while (j < i) {
 				delete envp[j];
 				j++;
@@ -53,13 +62,6 @@ char **CgiHandler::exportEnv() {
 	}
 	envp[_env.size()] = NULL;
 	return (envp);
-}
-
-std::string toUpper(std::string str) {
-	for (std::string::iterator it = str.begin(); it != str.end(); ++it) {
-		*it = toupper(*it);
-	}
-	return (str);
 }
 
 void CgiHandler::parseUri(std::string &uri, std::string &ext) {
@@ -77,6 +79,23 @@ void CgiHandler::parseUri(std::string &uri, std::string &ext) {
 	} else {
 		_scriptName = uri;
 	}
+}
+
+int CgiHandler::checkCgi() {
+	struct stat fileStat;
+	if (stat(_scriptPath.c_str(), &fileStat) < 0) {
+		return (404);
+	}
+	if (!(fileStat.st_mode & S_IRUSR)) {
+		return (403);
+	}
+	if (stat(_bin.c_str(), &fileStat) < 0) {
+		return (404);
+	}
+	if (!(fileStat.st_mode & S_IXUSR)) {
+		return (403);
+	}
+	return (0);
 }
 
 void CgiHandler::addHeadersToEnv(Request &req) {
@@ -104,7 +123,7 @@ void CgiHandler::addHeadersToEnv(Request &req) {
 	}
 }
 
-void CgiHandler::exec(Request &req, std::string bin, char **envp) {
+void CgiHandler::exec(Request &req, char **envp) {
 	importEnv(envp);
     addHeadersToEnv(req);
 	envp = exportEnv();
@@ -145,18 +164,117 @@ void CgiHandler::exec(Request &req, std::string bin, char **envp) {
 		close(pipeIn[0]);
 		close(pipeOut[1]);
 		std::string scriptDir = _scriptPath.substr(0, _scriptPath.find_last_of("/"));
+		std::string scriptName = _scriptPath.substr(_scriptPath.find_last_of("/") + 1);
 		if (chdir(scriptDir.c_str()) == -1) {
 			throw CgiException("couldn't chdir");
 		}
-		char *argv[] = {strdup(bin.c_str()), NULL};
-		if (argv[0] == NULL)
+		char *argv[] = {strdup(_bin.c_str()), strdup(scriptName.c_str()), NULL};
+		if (argv[0] == NULL || argv[1] == NULL) {
+			delete argv[0];
+			delete argv[1];
 			throw CgiException("couldn't strdup");
-		execve(bin.c_str(), argv, envp);
+		}
+		execve(_bin.c_str(), argv, envp);
 		delete argv[0];
+		delete argv[1];
 		throw CgiException("couldn't execve");
 	}
 	close(pipeIn[0]);
 	close(pipeOut[1]);
+	fcntl(_fdIn, F_SETFL, O_NONBLOCK);
+	fcntl(_fdOut, F_SETFL, O_NONBLOCK);
+}
+
+void CgiHandler::updateEpoll(int epfd) {
+	epoll_event ev;
+	ev.data.ptr = this;
+	ev.events = EPOLLOUT | EPOLLRDHUP;
+	if (epoll_ctl(epfd, EPOLL_CTL_ADD, _fdIn, &ev) == -1) {
+		throw CgiException("Epoll add");
+	}
+	ev.events = EPOLLIN | EPOLLRDHUP;
+	if (epoll_ctl(epfd, EPOLL_CTL_ADD, _fdOut, &ev) == -1) {
+		throw CgiException("Epoll add");
+	}
+}
+
+void CgiHandler::writeToCgi(int epfd) {
+	if (_bufferIn.getSize() == 0) {
+		epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL);
+		close(_fdIn);
+		_fdIn = -1;
+	}
+	int ret = write(_fdIn, _bufferIn.getContent(), _bufferIn.getSize());
+	if (ret == -1) {
+		throw CgiException("write");
+	}
+	_bufferIn.erase(ret);
+}
+
+void CgiHandler::readFromCgi(int epfd) {
+	char buf[READ_SIZE];
+	int ret = read(_fdOut, buf, READ_SIZE);
+	if (ret == -1) {
+		throw CgiException("read");
+	}
+	if (ret == 0) {
+		epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL);
+		close(_fdOut);
+		_fdOut = -1;
+		if (_fdIn >= 0) {
+			epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL);
+			close(_fdIn);
+			_fdIn = -1;
+		}
+		sendCgiResponse(epfd);
+	}
+	_bufferOut.addToBuffer(buf, ret);
+}
+
+void CgiHandler::sendCgiResponse(int epfd) {
+	Response res;
+	int status;
+	std::string line = _bufferOut.getLine2(status);
+	while (status == 0 && line.length() != 0) {
+		std::string field = toLower(line.substr(0, line.find(":")));
+		if (field == "status") {
+			res.setCode(atoi(line.substr(line.find(" ") + 1).c_str()));
+		} else if (field != "content-length") {
+			res.addHeaderLine(line);
+		}
+		line = _bufferOut.getLine2(status);
+	}
+	if (status == 0) {
+		_bufferOut.erase(_bufferOut.getPos());
+		res.setContent(_bufferOut.getContent(), _bufferOut.getSize());
+	}
+	char *resBuffer;
+	size_t resSize = res.exprt(&resBuffer);
+	Buffer *sockBuff = _sockAddr->getWriteBuffer();
+	sockBuff->addToBuffer(resBuffer, resSize);
+	delete[] resBuffer;
+	epoll_event ev;
+	ev.data.ptr = _sockAddr;
+	ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
+	if (epoll_ctl(epfd, EPOLL_CTL_MOD, _sockAddr->getFd(), &ev) < 0)
+		throw CgiException("Error epoll mod");
+}
+
+void CgiHandler::closeCgi(int epfd) {
+	if (_fdIn >= 0) {
+		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
+			throw CgiException("Error epoll delete");
+		close(_fdIn);
+	}
+	if (_fdOut >= 0) {
+		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL) < 0)
+			throw CgiException("Error epoll delete");
+		close(_fdOut);
+	}
+	if (_pid > 0) {
+		kill(_pid, SIGTERM);
+	}
+	_sockAddr->removeCgi(this);
 }
 
 CgiException::CgiException(std::string message) : _message(message) {}
