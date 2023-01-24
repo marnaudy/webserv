@@ -52,7 +52,7 @@ void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 		sock->acceptConnection(_sockets, _epfd);
 }
 
-void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
+int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 	// if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
 	if (event & (EPOLLOUT | EPOLLHUP | EPOLLRDHUP)) {
 		cgi->writeToCgi(_epfd);
@@ -63,7 +63,9 @@ void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 	if (event & (EPOLLERR)) {
 		std::cout << "closing cgi" << std::endl;
 		cgi->closeCgi(_epfd);
+		return (1);
 	}
+	return (0);
 }
 
 void Server::run(char **envp) {
@@ -80,8 +82,10 @@ void Server::run(char **envp) {
 			CgiHandler *cgi = dynamic_cast<CgiHandler *>(bid);
 			if (sock != NULL)
 				dealSocketEvent(sock, evs[i].events, envp);
-			else
-				dealCgiEvent(cgi, evs[i].events);
+			else {
+				if (dealCgiEvent(cgi, evs[i].events) != 0)
+					break;
+			}
 		}
 	}
 }

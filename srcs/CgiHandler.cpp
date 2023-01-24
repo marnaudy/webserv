@@ -105,25 +105,33 @@ int CgiHandler::checkCgi() {
 void CgiHandler::addHeadersToEnv(Request &req) {
 	std::map<std::string, std::string> headers = req.getHeaders();
 	if (req.getContentSize() != 0) {
-		_env.push_back("CONTENT_LENGTH = " + req.getHeader("content-length"));
-		_env.push_back("CONTENT_TYPE = " + req.getHeader("content-type"));
+		_env.push_back("CONTENT_LENGTH=" + req.getHeader("content-length"));
+		_env.push_back("CONTENT_TYPE=" + req.getHeader("content-type"));
 	}
-    _env.push_back("GATEWAY_INTERFACE = CGI/1.1");
-    _env.push_back("QUERY_STRING = " + _queryString);
-    _env.push_back("REQUEST_METHOD = " + req.getMethod());
-    _env.push_back("SCRIPT_NAME = " + _scriptName);
+	_env.push_back("REDIRECT_STATUS=200");
+    _env.push_back("GATEWAY_INTERFACE=CGI/1.1");
+    _env.push_back("QUERY_STRING=" + _queryString);
+    _env.push_back("REQUEST_METHOD=" + req.getMethod());
+    _env.push_back("SCRIPT_NAME=" + _scriptName);
+    _env.push_back("SCRIPT_FILENAME=" + _scriptPath.substr(_scriptPath.find_last_of("/") + 1));
     std::ostringstream ss;
     ss << req.getAddress();
-    _env.push_back("SERVER_NAME = " + ss.str());
+    _env.push_back("SERVER_NAME=" + ss.str());
     std::ostringstream sss;
     sss << req.getPort();
-    _env.push_back("SERVER_PORT = " + sss.str());
-    _env.push_back("SERVER_PROTOCOL = HTTP/1.1");
-    _env.push_back("SERVER_SOFTWARE = webserv");
-    _env.push_back("PATH_INFO = " + _extraPath);
-    _env.push_back("PATH_TRANSLATED = " + _extraPath);
-	for (std::map<std::string, std::string>::iterator it = headers.begin(); it != headers.end(); ++it) {
-		_env.push_back("HTTP_" + toUpper(it->first) + " = " + it->second);
+    _env.push_back("SERVER_PORT=" + sss.str());
+    _env.push_back("SERVER_PROTOCOL=HTTP/1.1");
+    _env.push_back("SERVER_SOFTWARE=webserv");
+    if (_extraPath.length() != 0)
+		_env.push_back("PATH_INFO=" + _extraPath);
+	else
+    	_env.push_back("PATH_INFO=/");
+	if (_extraPath.length() != 0)
+		_env.push_back("PATH_TRANSLATED=" + _extraPath);
+	else
+    	_env.push_back("PATH_TRANSLATED=/");
+	for (std::map<std::string, std::string>::iterator it=headers.begin(); it != headers.end(); ++it) {
+		_env.push_back("HTTP_" + toUpper(it->first) + "=" + it->second);
 	}
 }
 
@@ -171,9 +179,17 @@ void CgiHandler::exec(Request &req, char **envp) {
 		if (chdir(scriptDir.c_str()) == -1) {
 			throw CgiException("couldn't chdir");
 		}
-		envp = exportEnv();
+		char **envpNew = exportEnv();
+		std::cerr << "Print env sent to CGI" << std::endl;
+		int i = 0;
+		while (envpNew[i]) {
+			std::cerr << envpNew[i] << std::endl;
+			i++;
+		}
 		char *argv[] = {strdup(_bin.c_str()), strdup(scriptName.c_str()), NULL};
+		// char *argv[] = {strdup(_bin.c_str()), NULL, NULL};
 		if (argv[0] == NULL || argv[1] == NULL) {
+		// if (argv[0] == NULL) {
 			free(argv[0]);
 			free(argv[1]);
 			freeEnv(envp);
@@ -182,7 +198,7 @@ void CgiHandler::exec(Request &req, char **envp) {
 		std::cerr << "Print argv" << std::endl;
 		std::cerr << argv[0] << std::endl;
 		std::cerr << argv[1] << std::endl;
-		execve(_bin.c_str(), argv, envp);
+		execve(_bin.c_str(), argv, envpNew);
 		free(argv[0]);
 		free(argv[1]);
 		freeEnv(envp);
@@ -249,34 +265,37 @@ void CgiHandler::readFromCgi(int epfd) {
 }
 
 void CgiHandler::sendCgiResponse(int epfd) {
-	Response res;
+	Response *res = new Response(200);
 	int status;
-	res.setCode(200);
+	std::cout << "CGI response:" << std::endl;
+	write(STDIN_FILENO, _bufferOut.getContent(), _bufferOut.getSize());
 	if (_bufferOut.getSize() == 0) {
 		std::cout << "CGI script didn't send anyting" << std::endl;
-		res.setCode(500);
+		res->setCode(500);
 	} else {
 		std::string line = _bufferOut.getLine2(status);
 		while (status == 0 && line.length() != 0) {
 			std::string field = toLower(line.substr(0, line.find(":")));
 			if (field == "status") {
-				res.setCode(atoi(line.substr(line.find(" ") + 1).c_str()));
+				res->setCode(atoi(line.substr(line.find(" ") + 1).c_str()));
 			} else if (field != "content-length") {
-				res.addHeaderLine(line);
+				res->addHeaderLine(line);
 			}
 			line = _bufferOut.getLine2(status);
 		}
 		if (status == 0) {
 			_bufferOut.erase(_bufferOut.getPos());
-			res.setContent(_bufferOut.getContent(), _bufferOut.getSize());
+			res->setContent(_bufferOut.getContent(), _bufferOut.getSize());
 		}
 	}
-	_servAddr->handleError(res);
+	if (res->getCode() >= 300 && res->getCode() < 600)
+		_servAddr->handleError(*res);
 	char *resBuffer;
-	size_t resSize = res.exprt(&resBuffer);
+	size_t resSize = res->exprt(&resBuffer);
 	Buffer *sockBuff = _sockAddr->getWriteBuffer();
 	sockBuff->addToBuffer(resBuffer, resSize);
 	delete[] resBuffer;
+	delete res;
 	epoll_event ev;
 	ev.data.ptr = _sockAddr;
 	ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
