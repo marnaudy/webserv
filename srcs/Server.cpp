@@ -74,8 +74,10 @@ void Server::run(char **envp) {
 	while (g_running) {
 		int nbEvents = epoll_wait(_epfd, evs, MAX_EVENTS, -1);
 		std::cout << "Processing events : " << nbEvents << std::endl;
-		if (nbEvents < 0)
-			throw SocketException("Error epoll wait");
+		if (nbEvents < 0) {
+			if (errno != EINTR)
+				throw SocketException("Error epoll wait");
+		}
 		for (int i = 0; i < nbEvents; ++i) {
 			Bidon *bid = reinterpret_cast<Bidon *>(evs[i].data.ptr);
 			Socket *sock = dynamic_cast<Socket *>(bid);

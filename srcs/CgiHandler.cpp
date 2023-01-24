@@ -45,24 +45,11 @@ void CgiHandler::importEnv(char **env) {
 	}
 }
 
-void freeEnv(char **envp) {
-	int i = 0;
-	while (envp && envp[i]) {
-		free(envp[i]);
-		i++;
-	}
-	delete[] envp;
-}
-
 char **CgiHandler::exportEnv() {
 	char **envp;
 	envp = new char *[_env.size() + 1];
 	for (unsigned int i = 0; i < _env.size(); ++i) {
-		envp[i] = strdup(_env[i].c_str());
-		if (envp[i] == NULL) {
-			freeEnv(envp);
-			throw std::exception();
-		}
+		envp[i] = &_env[i][0];
 	}
 	envp[_env.size()] = NULL;
 	return (envp);
@@ -114,9 +101,8 @@ void CgiHandler::addHeadersToEnv(Request &req) {
     _env.push_back("REQUEST_METHOD=" + req.getMethod());
     _env.push_back("SCRIPT_NAME=" + _scriptName);
     _env.push_back("SCRIPT_FILENAME=" + _scriptPath.substr(_scriptPath.find_last_of("/") + 1));
-    std::ostringstream ss;
-    ss << req.getAddress();
-    _env.push_back("SERVER_NAME=" + ss.str());
+    _env.push_back("SERVER_NAME=" + addressItoP(req.getAddress()));
+	std::cout << addressItoP(req.getAddress()) << std::endl;
     std::ostringstream sss;
     sss << req.getPort();
     _env.push_back("SERVER_PORT=" + sss.str());
@@ -180,28 +166,9 @@ void CgiHandler::exec(Request &req, char **envp) {
 			throw CgiException("couldn't chdir");
 		}
 		char **envpNew = exportEnv();
-		std::cerr << "Print env sent to CGI" << std::endl;
-		int i = 0;
-		while (envpNew[i]) {
-			std::cerr << envpNew[i] << std::endl;
-			i++;
-		}
-		char *argv[] = {strdup(_bin.c_str()), strdup(scriptName.c_str()), NULL};
-		// char *argv[] = {strdup(_bin.c_str()), NULL, NULL};
-		if (argv[0] == NULL || argv[1] == NULL) {
-		// if (argv[0] == NULL) {
-			free(argv[0]);
-			free(argv[1]);
-			freeEnv(envp);
-			throw CgiException("couldn't strdup");
-		}
-		std::cerr << "Print argv" << std::endl;
-		std::cerr << argv[0] << std::endl;
-		std::cerr << argv[1] << std::endl;
+		char *argv[] = {&_bin[0], &scriptName[0], NULL};
 		execve(_bin.c_str(), argv, envpNew);
-		free(argv[0]);
-		free(argv[1]);
-		freeEnv(envp);
+		delete[] envpNew;
 		throw CgiException("couldn't execve");
 	}
 	close(pipeIn[0]);
@@ -267,8 +234,6 @@ void CgiHandler::readFromCgi(int epfd) {
 void CgiHandler::sendCgiResponse(int epfd) {
 	Response *res = new Response(200);
 	int status;
-	std::cout << "CGI response:" << std::endl;
-	write(STDIN_FILENO, _bufferOut.getContent(), _bufferOut.getSize());
 	if (_bufferOut.getSize() == 0) {
 		std::cout << "CGI script didn't send anyting" << std::endl;
 		res->setCode(500);
@@ -286,6 +251,8 @@ void CgiHandler::sendCgiResponse(int epfd) {
 		if (status == 0) {
 			_bufferOut.erase(_bufferOut.getPos());
 			res->setContent(_bufferOut.getContent(), _bufferOut.getSize());
+		} else {
+			res->setContent(NULL, 0);
 		}
 	}
 	if (res->getCode() >= 300 && res->getCode() < 600)

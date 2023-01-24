@@ -26,3 +26,15 @@ std::string toLower(std::string str) {
 	return (str);
 }
 
+std::string addressItoP(u_int32_t addr) {
+	std::string str;
+	for (int i = 3; i >= 0; i--) {
+		int byte = (addr >> (i * 8)) & 255;
+		std::ostringstream ss;
+		ss << byte;
+		str += ss.str();
+		if (i != 0)
+			str += '.';
+	}
+	return (str);
+}
