@@ -9,7 +9,9 @@
 class Buffer {
 public:
 	Buffer();
+	Buffer(const Buffer &other);
 	~Buffer();
+	Buffer &operator=(const Buffer &rhs);
 	char *getContent();
 	size_t getSize();
 	size_t getPos();

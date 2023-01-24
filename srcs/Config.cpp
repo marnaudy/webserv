@@ -1,6 +1,6 @@
 #include "Config.hpp"
 
-Config::Config(std::string fileName) {
+void Config::loadConfig(std::string fileName) {
 	std::ifstream ifs(fileName.c_str());
 	if (!ifs.is_open())
 		throw BadConfigException("Can't open confid file");
@@ -58,8 +58,8 @@ void Config::parse(std::ifstream &ifs) {
 	while (!ifs.eof()) {
 		if (parseDirective(line) == "server") {
 			VirtualServer serv;
-			serv.parse(ifs);
-			_servers.push_back(serv);
+			std::list<VirtualServer>::iterator it = _servers.insert(_servers.end(), serv);
+			it->parse(ifs);
 		} else {
 			throw BadConfigException("Unknown directive");
 		}

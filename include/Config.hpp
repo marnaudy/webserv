@@ -7,8 +7,8 @@
 class Config {
 public:
 	Config() {}
-	Config(std::string fileName);
 	~Config() {}
+	void loadConfig(std::string fileName);
 	void print();
 	std::map<unsigned int,std::list<addressInfo> > getPortList();
 	responseCgi handleRequest(Request &req, char **envp);

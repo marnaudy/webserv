@@ -15,5 +15,6 @@ std::string toUpper(std::string str);
 std::string toLower(std::string str);
 
 extern bool g_running;
+extern bool g_parent;
 
 #endif

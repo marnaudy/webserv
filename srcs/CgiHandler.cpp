@@ -45,18 +45,22 @@ void CgiHandler::importEnv(char **env) {
 	}
 }
 
+void freeEnv(char **envp) {
+	int i = 0;
+	while (envp && envp[i]) {
+		free(envp[i]);
+		i++;
+	}
+	delete[] envp;
+}
+
 char **CgiHandler::exportEnv() {
 	char **envp;
 	envp = new char *[_env.size() + 1];
 	for (unsigned int i = 0; i < _env.size(); ++i) {
 		envp[i] = strdup(_env[i].c_str());
 		if (envp[i] == NULL) {
-			unsigned int j = 0;
-			while (j < i) {
-				delete envp[j];
-				j++;
-			}
-			delete[] envp;
+			freeEnv(envp);
 			throw std::exception();
 		}
 	}
@@ -126,7 +130,6 @@ void CgiHandler::addHeadersToEnv(Request &req) {
 void CgiHandler::exec(Request &req, char **envp) {
 	importEnv(envp);
     addHeadersToEnv(req);
-	envp = exportEnv();
 	int pipeIn[2], pipeOut[2];
 	if (pipe(pipeIn) == -1) {
 		throw CgiException("couldn't open pipe");
@@ -148,7 +151,7 @@ void CgiHandler::exec(Request &req, char **envp) {
 		throw CgiException("couldn't fork");
 	}
 	if (_pid == 0) {
-		_pid = -1;
+		g_parent = false;
 		close(pipeIn[1]);
 		close(pipeOut[0]);
 		if (dup2(pipeIn[0], STDIN_FILENO) < 0) {
@@ -168,15 +171,21 @@ void CgiHandler::exec(Request &req, char **envp) {
 		if (chdir(scriptDir.c_str()) == -1) {
 			throw CgiException("couldn't chdir");
 		}
+		envp = exportEnv();
 		char *argv[] = {strdup(_bin.c_str()), strdup(scriptName.c_str()), NULL};
 		if (argv[0] == NULL || argv[1] == NULL) {
-			delete argv[0];
-			delete argv[1];
+			free(argv[0]);
+			free(argv[1]);
+			freeEnv(envp);
 			throw CgiException("couldn't strdup");
 		}
+		std::cerr << "Print argv" << std::endl;
+		std::cerr << argv[0] << std::endl;
+		std::cerr << argv[1] << std::endl;
 		execve(_bin.c_str(), argv, envp);
-		delete argv[0];
-		delete argv[1];
+		free(argv[0]);
+		free(argv[1]);
+		freeEnv(envp);
 		throw CgiException("couldn't execve");
 	}
 	close(pipeIn[0]);
@@ -199,14 +208,18 @@ void CgiHandler::updateEpoll(int epfd) {
 }
 
 void CgiHandler::writeToCgi(int epfd) {
+	if (_fdIn < 0)
+		return;
 	if (_bufferIn.getSize() == 0) {
-		epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL);
+		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
+			throw CgiException("Error epoll del cgi pipe");
 		close(_fdIn);
 		_fdIn = -1;
+		return;
 	}
 	int ret = write(_fdIn, _bufferIn.getContent(), _bufferIn.getSize());
 	if (ret == -1) {
-		throw CgiException("write");
+		throw CgiException("write to cgi failed");
 	}
 	_bufferIn.erase(ret);
 }
@@ -215,18 +228,22 @@ void CgiHandler::readFromCgi(int epfd) {
 	char buf[READ_SIZE];
 	int ret = read(_fdOut, buf, READ_SIZE);
 	if (ret == -1) {
-		throw CgiException("read");
+		throw CgiException("read from cgi failed");
 	}
 	if (ret == 0) {
-		epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL);
+		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL) < 0)
+			throw CgiException("Error epoll del cgi pipe");
 		close(_fdOut);
 		_fdOut = -1;
 		if (_fdIn >= 0) {
-			epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL);
+			if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
+				throw CgiException("Error epoll del cgi pipe");
 			close(_fdIn);
 			_fdIn = -1;
 		}
 		sendCgiResponse(epfd);
+		closeCgi(epfd);
+		return;
 	}
 	_bufferOut.addToBuffer(buf, ret);
 }
@@ -234,20 +251,27 @@ void CgiHandler::readFromCgi(int epfd) {
 void CgiHandler::sendCgiResponse(int epfd) {
 	Response res;
 	int status;
-	std::string line = _bufferOut.getLine2(status);
-	while (status == 0 && line.length() != 0) {
-		std::string field = toLower(line.substr(0, line.find(":")));
-		if (field == "status") {
-			res.setCode(atoi(line.substr(line.find(" ") + 1).c_str()));
-		} else if (field != "content-length") {
-			res.addHeaderLine(line);
+	res.setCode(200);
+	if (_bufferOut.getSize() == 0) {
+		std::cout << "CGI script didn't send anyting" << std::endl;
+		res.setCode(500);
+	} else {
+		std::string line = _bufferOut.getLine2(status);
+		while (status == 0 && line.length() != 0) {
+			std::string field = toLower(line.substr(0, line.find(":")));
+			if (field == "status") {
+				res.setCode(atoi(line.substr(line.find(" ") + 1).c_str()));
+			} else if (field != "content-length") {
+				res.addHeaderLine(line);
+			}
+			line = _bufferOut.getLine2(status);
 		}
-		line = _bufferOut.getLine2(status);
+		if (status == 0) {
+			_bufferOut.erase(_bufferOut.getPos());
+			res.setContent(_bufferOut.getContent(), _bufferOut.getSize());
+		}
 	}
-	if (status == 0) {
-		_bufferOut.erase(_bufferOut.getPos());
-		res.setContent(_bufferOut.getContent(), _bufferOut.getSize());
-	}
+	_servAddr->handleError(res);
 	char *resBuffer;
 	size_t resSize = res.exprt(&resBuffer);
 	Buffer *sockBuff = _sockAddr->getWriteBuffer();
@@ -261,17 +285,17 @@ void CgiHandler::sendCgiResponse(int epfd) {
 }
 
 void CgiHandler::closeCgi(int epfd) {
-	if (_fdIn >= 0) {
+	if (g_parent && _fdIn >= 0) {
 		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
 			throw CgiException("Error epoll delete");
 		close(_fdIn);
 	}
-	if (_fdOut >= 0) {
+	if (g_parent && _fdOut >= 0) {
 		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL) < 0)
 			throw CgiException("Error epoll delete");
 		close(_fdOut);
 	}
-	if (_pid > 0) {
+	if (g_parent && _pid > 0) {
 		kill(_pid, SIGTERM);
 	}
 	_sockAddr->removeCgi(this);

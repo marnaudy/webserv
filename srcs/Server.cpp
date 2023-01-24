@@ -1,7 +1,7 @@
 #include "Server.hpp"
 
 void Server::loadServer(std::string fileName) {
-	_config = Config(fileName);
+	_config.loadConfig(fileName);
 	_epfd = epoll_create(10);
 	if (_epfd < 0)
 		throw SocketException("Error epoll create");
@@ -53,16 +53,17 @@ void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 }
 
 void Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
-	if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
-		//Close cgi handler
-		return;
-	}
-	if (event & EPOLLOUT) {
+	// if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
+	if (event & (EPOLLOUT | EPOLLHUP | EPOLLRDHUP)) {
 		cgi->writeToCgi(_epfd);
-		return;
 	}
-	if (event & EPOLLIN)
+	if (event & (EPOLLIN | EPOLLHUP | EPOLLRDHUP)) {
 		cgi->readFromCgi(_epfd);
+	}
+	if (event & (EPOLLERR)) {
+		std::cout << "closing cgi" << std::endl;
+		cgi->closeCgi(_epfd);
+	}
 }
 
 void Server::run(char **envp) {

@@ -8,7 +8,9 @@
 class VirtualServer {
 public:
 	VirtualServer();
+	VirtualServer(const VirtualServer &other);
 	~VirtualServer() {}
+	VirtualServer &operator=(const VirtualServer &rhs);
 	unsigned int getPort();
 	u_int32_t getAddress();
 	unsigned int getMaxBodySize();

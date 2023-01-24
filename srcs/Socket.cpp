@@ -132,6 +132,8 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 			_writeBuffer.addToBuffer(resBuffer, resSize);
 			delete[] resBuffer;
 			delete ret.response;
+			if (!g_parent)
+				return;
 			epoll_event ev;
 			ev.data.ptr = this;
 			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
@@ -167,8 +169,12 @@ int Socket::writeSocket(int epfd) {
 }
 
 void Socket::closeSocket(int epfd) {
-	std::cout << "Closing socket" << std::endl;
-	if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fd, NULL) < 0) {
+	if (g_parent)
+		std::cout << "Closing socket" << std::endl;
+	for (std::list<CgiHandler>::iterator it = _cgiHandlers.begin(); it != _cgiHandlers.end(); ++it) {
+		it->closeCgi(epfd);
+	}
+	if (g_parent && epoll_ctl(epfd, EPOLL_CTL_DEL, _fd, NULL) < 0) {
 		throw SocketException("Error epoll del");
 	}
 	close(_fd);

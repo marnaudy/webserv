@@ -1,6 +1,7 @@
 #include "Server.hpp"
 
 bool g_running = true;
+bool g_parent = true;
 
 int main(int argc, char **argv, char **envp)
 {

@@ -1,6 +1,26 @@
 #include "VirtualServer.hpp"
 
-VirtualServer::VirtualServer() : _port(80), _maxBodySize(2000000) {}
+VirtualServer::VirtualServer() : _port(80), _errorPages(), _maxBodySize(2000000) {}
+
+VirtualServer::VirtualServer(const VirtualServer &other) :
+	_locations(other._locations),
+	_port(other._port),
+	_address(other._address),
+	_names(other._names),
+	_errorPages(other._errorPages),
+	_maxBodySize(other._maxBodySize) {}
+
+VirtualServer &VirtualServer::operator=(const VirtualServer &rhs) {
+	if (this != &rhs) {
+		_locations = rhs._locations;
+		_port = rhs._port;
+		_address = rhs._address;
+		_names = rhs._names;
+		_errorPages = rhs._errorPages;
+		_maxBodySize = rhs._maxBodySize;
+	}
+	return (*this);
+}
 
 unsigned int VirtualServer::getPort() {
 	return (_port);
@@ -50,7 +70,7 @@ responseCgi VirtualServer::handleRequest(Request &req, char**envp) {
 	}
 	else
 		ret = chosenLocation->handleRequest(req, envp);
-	if (ret.isResponse && ret.response->getCode() >= 300 && ret.response->getCode() < 600)
+	if (g_parent && ret.isResponse && ret.response->getCode() >= 300 && ret.response->getCode() < 600)
 		handleError(*ret.response);
 	return (ret);
 }
@@ -58,13 +78,12 @@ responseCgi VirtualServer::handleRequest(Request &req, char**envp) {
 void VirtualServer::handleError(Response &res) {
 	unsigned int code = res.getCode();
 	std::string fileName;
-	std::map<unsigned int, std::string>::iterator it = _errorPages.find(code);
-	if (it == _errorPages.end()) {
+	if (_errorPages.size() != 0)
+		fileName = _errorPages[code];
+	if (fileName.length() == 0) {
 		std::ostringstream ss;
 		ss << code;
 		fileName = "error/" + ss.str() + ".html"; 
-	} else {
-		fileName = _errorPages[code];
 	}
 	std::ifstream ifs(fileName.c_str());
 	if (!ifs.is_open() || ifs.fail()) {
@@ -138,9 +157,9 @@ void VirtualServer::parse(std::ifstream &ifs) {
 		} else if (directive == "location") {
 			std::string name = parseValue(line);
 			Location newLoc(name);
-			newLoc.parse(ifs);
-			newLoc.setServAddr(this);
-			_locations.push_back(newLoc);
+			std::list<Location>::iterator it = _locations.insert(_locations.end(), newLoc);
+			it->parse(ifs);
+			it->setServAddr(this);
 		} else {
 			throw BadConfigException("Unknown server directive");
 		}

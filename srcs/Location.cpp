@@ -191,7 +191,7 @@ responseCgi Location::handleCgi(Request &req, char **envp) {
 	try {
 		ret.cgi->exec(req, envp);
 	} catch (std::exception &e) {
-		if (ret.cgi->getPid() < 0)
+		if (!g_parent)
 			g_running = false;
 		std::cerr << "Cgi error: " << e.what() << std::endl;
 		delete ret.cgi;
@@ -204,14 +204,17 @@ responseCgi Location::handleCgi(Request &req, char **envp) {
 std::string Location::getCgiExt(std::string &uri) {
 	std::vector<std::string> splitUri = split(uri, '/');
 	for (std::vector<std::string>::iterator it = splitUri.begin(); it != splitUri.end(); ++it) {
-		size_t pos = it->length();
+		size_t end = it->length();
 		std::string ext;
 		do {
-			pos = it->find_last_of("?", pos - 1);
-			ext = it->substr(it->find_last_of(".", pos));
-			if (_cgi[ext].length() != 0)
-				return (ext);
-		} while (pos != std::string::npos);
+			end = it->find_last_of("?", end - 1);
+			size_t begin = it->find_last_of(".", end);
+			if (begin != std::string::npos) {
+				ext = it->substr(begin);
+				if (_cgi[ext].length() != 0)
+					return (ext);
+			}
+		} while (end != std::string::npos);
 	}
 	return ("");
 }

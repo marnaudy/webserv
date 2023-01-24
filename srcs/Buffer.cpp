@@ -6,6 +6,24 @@ Buffer::~Buffer() {
 	delete[] _content;
 }
 
+Buffer::Buffer(const Buffer &other) : _size(other._size), _pos(other._pos) {
+	_content = new char[_size]();
+	for (unsigned int i = 0; i < _size; i++) {
+		_content[i] = other._content[i];
+	}
+}
+
+Buffer &Buffer::operator=(const Buffer &rhs) {
+	_size = rhs._size;
+	_pos = rhs._pos;
+	delete _content;
+	_content = new char[_size]();
+	for (unsigned int i = 0; i < _size; i++) {
+		_content[i] = rhs._content[i];
+	}
+	return (*this);
+}
+
 char *Buffer::getContent() {
 	return (_content);
 }
