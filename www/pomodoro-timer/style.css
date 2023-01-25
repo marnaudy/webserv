@@ -1,0 +1,122 @@
+:root {
+  --background: #2e2836;
+  --primary: #6a2e35;
+  --font-color: #fffffa;
+  --secondary: #857c8d;
+  --bttn: #94bfbe;
+}
+* {
+  box-sizing: border-box;
+}
+h1,
+p,
+h2,
+.settings-bttn {
+  font-family: "Baloo 2";
+}
+
+body {
+  color: var(--font-color);
+  background-color: var(--background);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+h1 {
+  text-align: center;
+  font-size: 2rem;
+  padding: 2rem;
+}
+#container {
+  width: 75vw;
+  height: 75vh;
+}
+#top-container {
+  background-color: var(--primary);
+  border-radius: 5px;
+  margin-bottom: 2rem;
+}
+#settings-container {
+  display: flex;
+}
+#session-settings,
+#break-settings {
+  width: 50%;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 2rem;
+}
+#timer-container {
+  display: flex;
+  background-color: var(--primary);
+  padding: 5rem;
+  padding-top: 2rem;
+  justify-content: space-evenly;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 5px;
+}
+#timer-container-up,
+#timer-container-down {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+}
+#time-display {
+  font-size: 4rem;
+  margin: 2rem;
+}
+#break-display,
+#session-display {
+  font-size: 2rem;
+  padding: 0 1.5rem;
+}
+.settings-bttn,
+.bttn {
+  width: 4rem;
+  height: 4rem;
+  font-size: 1.5rem;
+  border: none;
+  color: var(--background);
+  padding: 1rem 1rem;
+  border-radius: 5px;
+  background-color: var(--bttn);
+  transition-duration: 150ms;
+}
+.settings-bttn {
+  font-size: 2.5rem;
+  padding: 0rem 1rem;
+}
+.settings-bttn:hover,
+.bttn:hover {
+  color: var(--bttn);
+  background-color: var(--background);
+  cursor: pointer;
+}
+#current-state {
+  font-size: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 600px) {
+  #settings-container {
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #session-settings,
+  #break-settings {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+@media (max-width: 400px) {
+  :root {
+    font-size: 12px;
+  }
+  #container {
+    height: 50vh;
+  }
+}

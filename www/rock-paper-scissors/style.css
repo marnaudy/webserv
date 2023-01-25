@@ -1,0 +1,15 @@
+#playContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#result {
+    text-align: center;
+}
+#score {
+    text-align: center;
+}
+#newGame {
+    display: block;
+    margin: auto;
+}

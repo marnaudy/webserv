@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Pomodoro timer</title>
+    <meta charset="UTF-8" />
+    <link href="https://fonts.googleapis.com/css?family=Baloo+2&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" type="text/css" href="reset.css" />
+    <link rel="stylesheet" type="text/css" href="style.css" />
+    <script src="https://kit.fontawesome.com/c1db208627.js" crossorigin="anonymous"></script>
+  </head>
+  <body>
+    <div id="container">
+      <div id="top-container">
+        <h1>Pomodoro clock</h1>
+        <div id="settings-container">
+          <div id="session-settings">
+            <button id="session-up" class="settings-bttn"><i class="fas fa-caret-up"></i></button>
+            <p id="session-display" class="settings-display">25</p>
+            <button id="session-down" class="settings-bttn"><i class="fas fa-caret-down"></i></button>
+          </div>
+          <div id="break-settings">
+            <button id="break-up" class="settings-bttn"><i class="fas fa-caret-up"></i></button>
+            <p id="break-display" class="settings-display">5</p>
+            <button id="break-down" class="settings-bttn"><i class="fas fa-caret-down"></i></button>
+          </div>
+        </div>
+      </div>
+      <div id="timer-container">
+        <h2 id="current-state">Session</h2>
+        <div id="timer-container-up">
+          <button id="start" class="bttn"><i class="fas fa-play"></i></button>
+          <button id="reset" class="bttn"><i class="fas fa-undo-alt"></i></button>
+        </div>
+        <p id="time-display"><span id="time-display-minutes">25</span>:<span id="time-display-seconds">00</span></p>
+        <div id="timer-container-down">
+          <button id="pause" class="bttn"><i class="fas fa-pause"></i></button>
+          <button id="stop" class="bttn"><i class="fas fa-stop"></i></button>
+        </div>
+      </div>
+    </div>
+    <audio id="beep" preload="auto" src="https://goo.gl/65cBl1"></audio>
+    <script src="script.js"></script>
+  </body>
+</html>

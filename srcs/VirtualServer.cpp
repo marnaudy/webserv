@@ -1,6 +1,6 @@
 #include "VirtualServer.hpp"
 
-VirtualServer::VirtualServer() : _port(80), _errorPages(), _maxBodySize(2000000) {}
+VirtualServer::VirtualServer() : _port(80), _address(0), _errorPages(), _maxBodySize(2000000) {}
 
 VirtualServer::VirtualServer(const VirtualServer &other) :
 	_locations(other._locations),

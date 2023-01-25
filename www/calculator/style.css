@@ -1,0 +1,74 @@
+html, body {
+    height: 100%;
+}
+
+body {
+    display: flex;
+    justify-content: center;
+    background-color: #d9f0f4;
+}
+
+#container {
+    width: 30%;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 1.5fr repeat(5, 1fr);
+    border: 4px solid #320e3b;
+    border-radius: 25px;
+    padding: 5px;
+    background-color:  #320e3b;
+}
+
+#display-container {
+    display: flex;
+    grid-area: 1/1/2/5;
+    justify-content: flex-end;
+    align-items: center;
+    background-color: #acbdba; /*#19535f#c0d8d1#ddfbd2;*/
+    border: 1px solid #320e3b;
+    border-radius: 20px 20px 0 0;
+    font-size: 80px;
+}
+
+#display {
+    font-family: 'Baloo 2', cursive;
+    word-wrap: break-word;
+}
+
+button {
+    color: black;
+    font-family: 'Baloo 2', cursive;
+    border: 1px solid #320e3b;
+    transition: all 0.1s ease-out;
+}
+
+.number, #decimal {
+    background-color: #f2f6d0;
+    font-size: 30px;
+}
+
+.operator {
+    background-color: #d9d2b6;
+    font-size: 30px;
+}
+
+.function {
+    background-color: #e4be9e;
+    font-size: 30px;
+}
+
+#enter {
+    grid-area: 5/4/7/5;
+    border-radius: 0 0 20px 0;
+}
+
+#b0 {
+    grid-area: 6/1/7/3;
+    border-radius: 0 0 0 20px;
+}
+
+.pressed {
+    border: 5px solid black;
+}

@@ -87,6 +87,8 @@ void Socket::openSocket() {
 			<< std::hex << _address << std::dec << std::endl;
 		throw SocketException("Error bind");
 	}
+	std::cout << "Binding to port " << _port << " and address "
+		<< std::hex << _address << std::dec << std::endl;
 	if (listen(_fd, MAX_QUEUE) < 0)
 		throw SocketException("Error listen");
 }
