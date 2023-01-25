@@ -102,7 +102,6 @@ void CgiHandler::addHeadersToEnv(Request &req) {
     _env.push_back("SCRIPT_NAME=" + _scriptName);
     _env.push_back("SCRIPT_FILENAME=" + _scriptPath.substr(_scriptPath.find_last_of("/") + 1));
     _env.push_back("SERVER_NAME=" + addressItoP(req.getAddress()));
-	std::cout << addressItoP(req.getAddress()) << std::endl;
     std::ostringstream sss;
     sss << req.getPort();
     _env.push_back("SERVER_PORT=" + sss.str());

@@ -9,7 +9,6 @@ if (isset($_GET['source'])) { die(highlight_file(FILE, 1)); }
 
     <body>
         <p>L'information suivante a &eacute;t&eacute; sauv&eacute;e dans un cookie sur votre machine</p>
-        <p><?php print ($_COOKIE)?></p>
         <table width="200" border="1" cellspacing="2" cellpadding="0">
             <?php 
                 foreach($_COOKIE as $key => $value)

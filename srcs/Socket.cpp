@@ -2,10 +2,13 @@
 
 Socket::Socket(unsigned int port, std::list<addressInfo> addressList) :
 	_port(port), _addressList(addressList), _fd(-1), _isClientSocket(false), _closeAfterWrite(false) {
-	if (addressList.size() == 1)
-		_address = _addressList.front().address;
-	else
-		_address = 0;
+	_address = _addressList.front().address;
+	for (std::list<addressInfo>::iterator it = addressList.begin(); it != addressList.end(); ++it) {
+		if (it->address != _address) {
+			_address = 0;
+			break;
+		}
+	}
 }
 
 Socket::Socket(unsigned int port, u_int32_t address, int fd, unsigned int maxBodySize) :
@@ -70,6 +73,8 @@ void Socket::acceptConnection(std::list<Socket> &vec, int epfd) {
 }
 
 void Socket::openSocket() {
+	std::cout << "Opening socket on port " << _port;
+	std::cout << " and address " << addressItoP(_address) << std::endl;
 	_fd = socket(PF_INET, SOCK_STREAM, 0);
 	if (_fd < 0)
 		throw SocketException("Error open socket");
@@ -87,14 +92,12 @@ void Socket::openSocket() {
 			<< std::hex << _address << std::dec << std::endl;
 		throw SocketException("Error bind");
 	}
-	std::cout << "Binding to port " << _port << " and address "
-		<< std::hex << _address << std::dec << std::endl;
 	if (listen(_fd, MAX_QUEUE) < 0)
 		throw SocketException("Error listen");
 }
 
 void Socket::readSocket(int epfd, Config &config, char **envp) {
-	std::cout << "READING" << std::endl;
+	std::cout << "Reading from socket" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
 	if (buffSize < 0)
@@ -103,7 +106,6 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 	Request req(_port, _address);
 	int parse_len;
 	parse_len = req.parse(_readBuffer, _maxBodySize);
-	std::cout << "parse_len = " << parse_len << std::endl;
 	while (parse_len != 0) {
 		if (parse_len < 0) {
 			req.setErrorCode(-parse_len);
@@ -117,7 +119,6 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 			delete[] resBuffer;
 			delete ret.response;
 			_closeAfterWrite = true;
-			std::cout << "set close after write" << std::endl;
 			epoll_event ev;
 			ev.data.ptr = this;
 			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
@@ -126,7 +127,6 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 			return;
 		}
 		_readBuffer.erase(parse_len);
-		req.print();
 		responseCgi ret = config.handleRequest(req, envp);
 		if (ret.isResponse) {
 			char *resBuffer;
@@ -153,7 +153,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 }
 
 int Socket::writeSocket(int epfd) {
-	std::cout << "Writing" << std::endl;
+	std::cout << "Writing to socket" << std::endl;
 	ssize_t lenSent = send(_fd, _writeBuffer.getContent(), _writeBuffer.getSize(), 0);
 	if (lenSent < 0)
 		throw SocketException("Error writing");

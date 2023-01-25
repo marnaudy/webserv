@@ -61,7 +61,6 @@ int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 		cgi->readFromCgi(_epfd);
 	}
 	if (event & (EPOLLERR)) {
-		std::cout << "closing cgi" << std::endl;
 		cgi->closeCgi(_epfd);
 		return (1);
 	}
@@ -73,7 +72,6 @@ void Server::run(char **envp) {
 	epoll_event evs[MAX_EVENTS];
 	while (g_running) {
 		int nbEvents = epoll_wait(_epfd, evs, MAX_EVENTS, -1);
-		std::cout << "Processing events : " << nbEvents << std::endl;
 		if (nbEvents < 0) {
 			if (errno != EINTR)
 				throw SocketException("Error epoll wait");

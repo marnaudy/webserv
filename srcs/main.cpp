@@ -30,7 +30,6 @@ int main(int argc, char **argv, char **envp)
 			serv.loadServer(argv[1]);
 		else
 			serv.loadServer();
-		serv.printConfig();
 		serv.run(envp);
 	} catch (std::exception &e) {
 		std::cout << e.what() << std::endl;

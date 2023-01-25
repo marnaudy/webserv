@@ -124,7 +124,6 @@ void Location::handleGetFile(Response &res, std::string fileName) {
 	res.setContentType(fileName);
 	res.setCode(200);
 	ifs.close();
-	res.printContent();
 }
 
 void Location::handleDirList(Response &res, std::string dirName, std::string &uri) {
@@ -280,11 +279,11 @@ responseCgi Location::handlePost(Request &req, char **envp) {
 }
 
 responseCgi Location::handleDelete(Request &req) {
+	std::string fileName = getFileName(req.getURI());
+	std::cout << "DELETE : " << fileName << std::endl;
 	responseCgi ret;
 	ret.isResponse = true;
 	ret.response = new Response;
-	std::string fileName = getFileName(req.getURI());
-	std::cout << "DELETE : " << fileName << std::endl;
 	struct stat fileStat;
 	if (stat(fileName.c_str(), &fileStat) < 0) {
 		ret.response->setCode(404);
