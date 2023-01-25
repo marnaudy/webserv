@@ -99,7 +99,7 @@ void Response::readFileContent(std::ifstream &ifs) {
 	_content = std::vector<char>();
 	while (!ifs.eof()) {
 		c = ifs.get();
-		if (c != EOF)
+		if (!ifs.eof())
 			_content.push_back(c);
 	}
 	ss << _content.size();

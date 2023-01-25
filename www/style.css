@@ -1,0 +1,16 @@
+body {
+	background-color: #202020;
+	color: beige;
+}
+
+h1 {
+	text-align: center;
+}
+
+h2 {
+	margin-left: 2em;
+}
+
+a {
+	color: lightblue;
+}
