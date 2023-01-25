@@ -139,6 +139,8 @@ void Location::handleDirList(Response &res, std::string dirName, std::string &ur
 	while (dirContent != NULL) {
 		html += "<a href=\"";
 		html += dirContent->d_name;
+		if (dirContent->d_type == DT_DIR)
+			html += "/";
 		html += "\">";
 		html += dirContent->d_name;
 		html += "</a><br>\n";
