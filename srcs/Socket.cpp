@@ -96,7 +96,7 @@ void Socket::openSocket() {
 		throw SocketException("Error listen");
 }
 
-void Socket::readSocket(int epfd, Config &config, char **envp) {
+void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 	std::cout << "Reading from socket" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
@@ -109,7 +109,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 	while (parse_len != 0) {
 		if (parse_len < 0) {
 			req.setErrorCode(-parse_len);
-			responseCgi ret = config.handleRequest(req, envp);
+			responseCgi ret = config.handleRequest(req, envp, serv);
 			if (!ret.isResponse)
 				throw SocketException("Bad request lead to a cgi response");
 			ret.response->addHeader("connection", "close");
@@ -127,7 +127,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp) {
 			return;
 		}
 		_readBuffer.erase(parse_len);
-		responseCgi ret = config.handleRequest(req, envp);
+		responseCgi ret = config.handleRequest(req, envp, serv);
 		if (ret.isResponse) {
 			char *resBuffer;
 			size_t resSize = ret.response->exprt(&resBuffer);
@@ -174,10 +174,18 @@ void Socket::closeSocket(int epfd) {
 	if (g_parent)
 		std::cout << "Closing socket" << std::endl;
 	for (std::list<CgiHandler>::iterator it = _cgiHandlers.begin(); it != _cgiHandlers.end(); ++it) {
-		it->closeCgi(epfd);
+		it->closeCgi(epfd, false);
 	}
 	if (g_parent && epoll_ctl(epfd, EPOLL_CTL_DEL, _fd, NULL) < 0) {
 		throw SocketException("Error epoll del");
+	}
+	close(_fd);
+}
+
+void Socket::closeSocketFds() {
+	for (std::list<CgiHandler>::iterator it = _cgiHandlers.begin(); it != _cgiHandlers.end(); ++it) {
+		close(it->getFdIn());
+		close(it->getFdOut());
 	}
 	close(_fd);
 }

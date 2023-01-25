@@ -33,11 +33,11 @@ public:
 	void handleDirList(Response &res, std::string dirName, std::string &uri);
 	void handleGetFile(Response &res, std::string fileName);
 	void handleGetDir(Response &res, std::string fileName, std::string &uri);
-	responseCgi handleCgi(Request &req, char** envp);
-	responseCgi handleGet(Request &req, char** envp);
-	responseCgi handlePost(Request &req, char** envp);
+	responseCgi handleCgi(Request &req, char** envp, Server *serv);
+	responseCgi handleGet(Request &req, char** envp, Server *serv);
+	responseCgi handlePost(Request &req, char** envp, Server *serv);
 	responseCgi handleDelete(Request &req);
-	responseCgi handleRequest(Request &req, char**envp);
+	responseCgi handleRequest(Request &req, char**envp, Server *serv);
 	std::string getFileName(std::string &uri);
 	void setServAddr(VirtualServer *servAddr);
 private:

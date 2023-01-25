@@ -21,6 +21,7 @@ public:
 
 class Socket;
 class VirtualServer;
+class Server;
 
 class CgiHandler : public Bidon {
 public:
@@ -37,12 +38,12 @@ public:
 	void addBody(char *body, size_t size);
 	void parseUri(std::string &uri, std::string &ext);
 	int checkCgi();
-	void exec(Request &req, char **envp);
+	void exec(Request &req, char **envp, Server *serv);
 	void updateEpoll(int epfd);
 	void writeToCgi(int epfd);
 	void readFromCgi(int epfd);
 	void sendCgiResponse(int epfd);
-	void closeCgi(int epfd);
+	void closeCgi(int epfd, bool removeFromSocket);
 private:
 	void importEnv(char **env);
 	char **exportEnv();

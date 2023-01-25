@@ -44,7 +44,7 @@ void VirtualServer::checkConfig() {
 		throw BadConfigException("Invalid port");
 }
 
-responseCgi VirtualServer::handleRequest(Request &req, char**envp) {
+responseCgi VirtualServer::handleRequest(Request &req, char**envp, Server *serv) {
 	responseCgi ret;
 	if (req.getErrorCode() != 0) {
 		ret.isResponse = true;
@@ -69,7 +69,7 @@ responseCgi VirtualServer::handleRequest(Request &req, char**envp) {
 		return (ret);
 	}
 	else
-		ret = chosenLocation->handleRequest(req, envp);
+		ret = chosenLocation->handleRequest(req, envp, serv);
 	if (g_parent && ret.isResponse && ret.response->getCode() >= 300 && ret.response->getCode() < 600)
 		handleError(*ret.response);
 	return (ret);

@@ -19,7 +19,7 @@ setcookie("city", "", time() - 3600, "/", "", 0);
 </head>
 <body>
 
-<FORM method="POST" action="cookie.php">
+<FORM method="POST" action="cookies.php">
 Enter Name : <input type="text" name="name"> <br/>
 Enter Age : <input type="text" name="age"> <br/>
 Enter City : <input type="text" name="city"> <br/>

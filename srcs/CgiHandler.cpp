@@ -1,5 +1,6 @@
 #include "CgiHandler.hpp"
 #include "Socket.hpp"
+#include "Server.hpp"
 
 int CgiHandler::getFdIn() {
 	return (_fdIn);
@@ -120,7 +121,26 @@ void CgiHandler::addHeadersToEnv(Request &req) {
 	}
 }
 
-void CgiHandler::exec(Request &req, char **envp) {
+std::string updateBin(std::string &bin, std::string &scriptPath) {
+	if (bin[0] == '/')
+		return (bin);
+	int subdirCount = 0;
+	std::vector<std::string> splitPath = split(scriptPath, '/');
+	for (unsigned int i = 0; i < splitPath.size(); ++i) {
+		if (splitPath[i] == "..")
+			subdirCount--;
+		else if (splitPath[i] != ".")
+			subdirCount++;
+	}
+	std::string newBin;
+	for (int i = 0; i < subdirCount; ++i) {
+		newBin += "../";
+	}
+	newBin += bin;
+	return (newBin);
+}
+
+void CgiHandler::exec(Request &req, char **envp, Server *serv) {
 	importEnv(envp);
     addHeadersToEnv(req);
 	int pipeIn[2], pipeOut[2];
@@ -145,6 +165,7 @@ void CgiHandler::exec(Request &req, char **envp) {
 	}
 	if (_pid == 0) {
 		g_parent = false;
+		serv->closeFds();
 		close(pipeIn[1]);
 		close(pipeOut[0]);
 		if (dup2(pipeIn[0], STDIN_FILENO) < 0) {
@@ -164,9 +185,16 @@ void CgiHandler::exec(Request &req, char **envp) {
 		if (chdir(scriptDir.c_str()) == -1) {
 			throw CgiException("couldn't chdir");
 		}
+		std::string binUpdated = updateBin(_bin, scriptDir);
 		char **envpNew = exportEnv();
-		char *argv[] = {&_bin[0], &scriptName[0], NULL};
-		execve(_bin.c_str(), argv, envpNew);
+		char *argv[] = {&binUpdated[0], &scriptName[0], NULL};
+		// close(8);
+		// close(9);
+		// close(11);
+		// close(12);
+		// close(13);
+		// close(14);
+		execve(binUpdated.c_str(), argv, envpNew);
 		delete[] envpNew;
 		throw CgiException("couldn't execve");
 	}
@@ -224,7 +252,7 @@ void CgiHandler::readFromCgi(int epfd) {
 			_fdIn = -1;
 		}
 		sendCgiResponse(epfd);
-		closeCgi(epfd);
+		closeCgi(epfd, true);
 		return;
 	}
 	_bufferOut.addToBuffer(buf, ret);
@@ -269,7 +297,7 @@ void CgiHandler::sendCgiResponse(int epfd) {
 		throw CgiException("Error epoll mod");
 }
 
-void CgiHandler::closeCgi(int epfd) {
+void CgiHandler::closeCgi(int epfd, bool removeFromSocket) {
 	if (g_parent && _fdIn >= 0) {
 		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
 			throw CgiException("Error epoll delete");
@@ -283,7 +311,8 @@ void CgiHandler::closeCgi(int epfd) {
 	if (g_parent && _pid > 0) {
 		kill(_pid, SIGTERM);
 	}
-	_sockAddr->removeCgi(this);
+	if (removeFromSocket)
+		_sockAddr->removeCgi(this);
 }
 
 CgiException::CgiException(std::string message) : _message(message) {}

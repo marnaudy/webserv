@@ -135,15 +135,22 @@ void Location::handleDirList(Response &res, std::string dirName, std::string &ur
 	std::string html = "<html>\n<head><title>Index of " + uri + "</title></head>\n<body>\n<h1>Index of ";
 	html += uri + "</h1><hr><br>\n";
 	struct dirent *dirContent = readdir(dirStream);
+	std::vector<std::string> contentVec;
 	while (dirContent != NULL) {
-		html += "<a href=\"";
-		html += dirContent->d_name;
+		std::string name;
+		name = dirContent->d_name;
 		if (dirContent->d_type == DT_DIR)
-			html += "/";
-		html += "\">";
-		html += dirContent->d_name;
-		html += "</a><br>\n";
+			name += "/";
+		contentVec.push_back(name);
 		dirContent = readdir(dirStream);
+	}
+	std::sort(contentVec.begin(), contentVec.end());
+	for (std::vector<std::string>::iterator it = contentVec.begin(); it != contentVec.end(); ++it) {
+		html += "<a href=\"";
+		html += *it;
+		html += "\">";
+		html += *it;
+		html += "</a><br>\n";
 	}
 	html += "<hr></body>\n</html>";
 	res.setContent(html);
@@ -171,7 +178,7 @@ void Location::handleGetDir(Response &res, std::string fileName, std::string &ur
 	handleGetFile(res, fileName);
 }
 
-responseCgi Location::handleCgi(Request &req, char **envp) {
+responseCgi Location::handleCgi(Request &req, char **envp, Server *serv) {
 	responseCgi ret;
 	ret.cgi = new CgiHandler;
 	ret.isResponse = false;
@@ -190,7 +197,7 @@ responseCgi Location::handleCgi(Request &req, char **envp) {
 		return (ret);
 	}
 	try {
-		ret.cgi->exec(req, envp);
+		ret.cgi->exec(req, envp, serv);
 	} catch (std::exception &e) {
 		if (!g_parent)
 			g_running = false;
@@ -215,17 +222,17 @@ std::string Location::getCgiExt(std::string &uri) {
 				if (_cgi[ext].length() != 0)
 					return (ext);
 			}
-		} while (end != std::string::npos);
+		} while (end != std::string::npos && end != 0);
 	}
 	return ("");
 }
 
-responseCgi Location::handleGet(Request &req, char **envp) {
+responseCgi Location::handleGet(Request &req, char **envp, Server *serv) {
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "GET file : " << fileName << std::endl;
 	responseCgi ret;
 	if (getCgiExt(req.getURI()).length() != 0)
-		return (handleCgi(req, envp));
+		return (handleCgi(req, envp, serv));
 	ret.isResponse = true;
 	ret.response = new Response;
 	ret.response->addHeader("cache-control", "no-cache");
@@ -250,12 +257,13 @@ responseCgi Location::handleGet(Request &req, char **envp) {
 	return (ret);
 }
 
-responseCgi Location::handlePost(Request &req, char **envp) {
+responseCgi Location::handlePost(Request &req, char **envp, Server *serv) {
 	std::string fileName = getFileName(req.getURI());
 	responseCgi ret;
 	std::cout << "POST : " << fileName << std::endl;
+	req.print();
 	if (getCgiExt(req.getURI()).length() != 0)
-		return (handleCgi(req, envp));
+		return (handleCgi(req, envp, serv));
 	ret.isResponse = true;
 	ret.response = new Response;
 	if (!_allowUpload) {
@@ -267,7 +275,8 @@ responseCgi Location::handlePost(Request &req, char **envp) {
 		ret.response->setCode(411);
 		return (ret);
 	}
-	std::ofstream ofs(fileName.c_str());
+	std::string uploadFileName = _uploadLocation + "/" + req.getURI();
+	std::ofstream ofs(uploadFileName.c_str());
 	if (!ofs.is_open() || ofs.fail()) {
 		ret.response->setCode(403);
 		return (ret);
@@ -297,7 +306,7 @@ responseCgi Location::handleDelete(Request &req) {
 	return (ret);
 }
 
-responseCgi Location::handleRequest(Request &req, char**envp) {
+responseCgi Location::handleRequest(Request &req, char**envp, Server *serv) {
 	if (std::find(_allowMeth.begin(), _allowMeth.end(), req.getMethod()) == _allowMeth.end()) {
 		responseCgi ret;
 		ret.isResponse = true;
@@ -305,9 +314,9 @@ responseCgi Location::handleRequest(Request &req, char**envp) {
 		return (ret);
 	}
 	if (req.getMethod() == "GET")
-		return (handleGet(req, envp));
+		return (handleGet(req, envp, serv));
 	if (req.getMethod() == "POST")
-		return (handlePost(req, envp));
+		return (handlePost(req, envp, serv));
 	return (handleDelete(req));
 }
 

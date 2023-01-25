@@ -47,7 +47,7 @@ void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 		}
 	}
 	if (sock->isClientSocket() && event & EPOLLIN)
-		sock->readSocket(_epfd, _config, envp);
+		sock->readSocket(_epfd, _config, envp, this);
 	if (!sock->isClientSocket() && event & EPOLLIN)
 		sock->acceptConnection(_sockets, _epfd);
 }
@@ -61,7 +61,7 @@ int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 		cgi->readFromCgi(_epfd);
 	}
 	if (event & (EPOLLERR)) {
-		cgi->closeCgi(_epfd);
+		cgi->closeCgi(_epfd, true);
 		return (1);
 	}
 	return (0);
@@ -97,3 +97,9 @@ void Server::closeServer() {
 	close(_epfd);
 }
 
+void Server::closeFds() {
+	close(_epfd);
+	for (std::list<Socket>::iterator it = _sockets.begin(); it != _sockets.end(); ++it) {
+		it->closeSocketFds();
+	}
+}

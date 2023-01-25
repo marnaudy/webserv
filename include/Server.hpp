@@ -14,6 +14,7 @@ public:
 	void printConfig();
 	void run(char **envp);
 	void closeServer();
+	void closeFds();
 private:
 	void openSockets();
 	void closeSocket(Socket &sock);
