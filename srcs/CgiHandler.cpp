@@ -188,12 +188,6 @@ void CgiHandler::exec(Request &req, char **envp, Server *serv) {
 		std::string binUpdated = updateBin(_bin, scriptDir);
 		char **envpNew = exportEnv();
 		char *argv[] = {&binUpdated[0], &scriptName[0], NULL};
-		// close(8);
-		// close(9);
-		// close(11);
-		// close(12);
-		// close(13);
-		// close(14);
 		execve(binUpdated.c_str(), argv, envpNew);
 		delete[] envpNew;
 		throw CgiException("couldn't execve");

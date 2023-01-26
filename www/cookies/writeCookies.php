@@ -1,7 +1,4 @@
 <?php
-if (isset($_GET['source'])) { die(highlight_file(FILE, 1)); }
-?>
-<?php
 
 $expected=array('nom', 'taille', 'couleur', 'expiration'); 
 foreach ($expected as $formvar)

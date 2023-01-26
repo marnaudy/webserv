@@ -127,6 +127,8 @@ void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 			return;
 		}
 		_readBuffer.erase(parse_len);
+		if (req.getHeader("connection") == "close")
+			_closeAfterWrite = true;
 		responseCgi ret = config.handleRequest(req, envp, serv);
 		if (ret.isResponse) {
 			char *resBuffer;

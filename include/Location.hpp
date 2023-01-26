@@ -36,7 +36,7 @@ public:
 	responseCgi handleCgi(Request &req, char** envp, Server *serv);
 	responseCgi handleGet(Request &req, char** envp, Server *serv);
 	responseCgi handlePost(Request &req, char** envp, Server *serv);
-	responseCgi handleDelete(Request &req);
+	responseCgi handleDelete(Request &req, char **envp, Server *serv);
 	responseCgi handleRequest(Request &req, char**envp, Server *serv);
 	std::string getFileName(std::string &uri);
 	void setServAddr(VirtualServer *servAddr);

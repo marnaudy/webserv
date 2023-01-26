@@ -261,7 +261,6 @@ responseCgi Location::handlePost(Request &req, char **envp, Server *serv) {
 	std::string fileName = getFileName(req.getURI());
 	responseCgi ret;
 	std::cout << "POST : " << fileName << std::endl;
-	req.print();
 	if (getCgiExt(req.getURI()).length() != 0)
 		return (handleCgi(req, envp, serv));
 	ret.isResponse = true;
@@ -287,10 +286,12 @@ responseCgi Location::handlePost(Request &req, char **envp, Server *serv) {
 	return (ret);
 }
 
-responseCgi Location::handleDelete(Request &req) {
+responseCgi Location::handleDelete(Request &req, char **envp, Server *serv) {
 	std::string fileName = getFileName(req.getURI());
 	std::cout << "DELETE : " << fileName << std::endl;
 	responseCgi ret;
+	if (getCgiExt(req.getURI()).length() != 0)
+		return (handleCgi(req, envp, serv));
 	ret.isResponse = true;
 	ret.response = new Response;
 	struct stat fileStat;
@@ -317,7 +318,7 @@ responseCgi Location::handleRequest(Request &req, char**envp, Server *serv) {
 		return (handleGet(req, envp, serv));
 	if (req.getMethod() == "POST")
 		return (handlePost(req, envp, serv));
-	return (handleDelete(req));
+	return (handleDelete(req, envp, serv));
 }
 
 std::string Location::getFileName(std::string &uri) {
