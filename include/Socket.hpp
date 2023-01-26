@@ -31,7 +31,7 @@ public:
 	bool isClientSocket();
 	void acceptConnection(std::list<Socket> &vec, int epfd);
 	void openSocket();
-	void readSocket(int epfd, Config &config, char **envp, Server *serv);
+	int readSocket(int epfd, Config &config, char **envp, Server *serv);
 	int writeSocket(int epfd);
 	void closeSocket(int epfd);
 	void closeSocketFds();

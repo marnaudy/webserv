@@ -96,12 +96,14 @@ void Socket::openSocket() {
 		throw SocketException("Error listen");
 }
 
-void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
+int Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 	std::cout << "Reading from socket" << std::endl;
 	char buffer[READ_SIZE];
 	ssize_t buffSize = recv(_fd, buffer, READ_SIZE, 0);
-	if (buffSize < 0)
-		throw SocketException("Error reading");
+	if (buffSize < 0) {
+		std::cout << "Reading failed" << std::endl;
+		return (1);
+	}
 	_readBuffer.addToBuffer(buffer, static_cast<size_t>(buffSize));
 	Request req(_port, _address);
 	int parse_len;
@@ -124,7 +126,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
 			if (epoll_ctl(epfd, EPOLL_CTL_MOD, _fd, &ev) < 0)
 				throw SocketException("Error epoll mod");
-			return;
+			return (0);
 		}
 		_readBuffer.erase(parse_len);
 		if (req.getHeader("connection") == "close")
@@ -143,7 +145,7 @@ void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 			delete[] resBuffer;
 			delete ret.response;
 			if (!g_parent)
-				return;
+				return (0);
 			epoll_event ev;
 			ev.data.ptr = this;
 			ev.events = EPOLLOUT | EPOLLIN | EPOLLRDHUP;
@@ -158,13 +160,16 @@ void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 		req = Request(_port, _address);
 		parse_len = req.parse(_readBuffer, _maxBodySize);
 	}
+	return (0);
 }
 
 int Socket::writeSocket(int epfd) {
 	std::cout << "Writing to socket" << std::endl;
 	ssize_t lenSent = send(_fd, _writeBuffer.getContent(), _writeBuffer.getSize(), 0);
-	if (lenSent < 0)
-		throw SocketException("Error writing");
+	if (lenSent < 0) {
+		std::cout << "Writing failed" << std::endl;
+		return (1);
+	}
 	_writeBuffer.erase(static_cast<size_t>(lenSent));
 	if (_writeBuffer.getSize() == 0) {
 		epoll_event ev;

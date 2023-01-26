@@ -35,21 +35,18 @@ void Server::closeSocket(Socket &sock) {
 	}
 }
 
-void Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
+int Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 	if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
-		closeSocket(*sock);
-		return;
+		return (1);
 	}
 	if (sock->isClientSocket() && event & EPOLLOUT) {
-		if (sock->writeSocket(_epfd) != 0) {
-			closeSocket(*sock);
-			return;
-		}
+		return (sock->writeSocket(_epfd));
 	}
 	if (sock->isClientSocket() && event & EPOLLIN)
-		sock->readSocket(_epfd, _config, envp, this);
+		return (sock->readSocket(_epfd, _config, envp, this));
 	if (!sock->isClientSocket() && event & EPOLLIN)
 		sock->acceptConnection(_sockets, _epfd);
+	return (0);
 }
 
 int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
@@ -61,7 +58,6 @@ int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 		cgi->readFromCgi(_epfd);
 	}
 	if (event & (EPOLLERR)) {
-		cgi->closeCgi(_epfd, true);
 		return (1);
 	}
 	return (0);
@@ -80,11 +76,16 @@ void Server::run(char **envp) {
 			Bidon *bid = reinterpret_cast<Bidon *>(evs[i].data.ptr);
 			Socket *sock = dynamic_cast<Socket *>(bid);
 			CgiHandler *cgi = dynamic_cast<CgiHandler *>(bid);
-			if (sock != NULL)
-				dealSocketEvent(sock, evs[i].events, envp);
-			else {
-				if (dealCgiEvent(cgi, evs[i].events) != 0)
+			if (sock != NULL) {
+				if (dealSocketEvent(sock, evs[i].events, envp)) {
+					closeSocket(*sock);
 					break;
+				}
+			} else {
+				if (dealCgiEvent(cgi, evs[i].events) != 0) {
+					cgi->closeCgi(_epfd, true);
+					break;
+				}
 			}
 		}
 	}

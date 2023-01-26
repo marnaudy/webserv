@@ -18,7 +18,7 @@ public:
 private:
 	void openSockets();
 	void closeSocket(Socket &sock);
-	void dealSocketEvent(Socket *sock, u_int32_t event, char **envp);
+	int dealSocketEvent(Socket *sock, u_int32_t event, char **envp);
 	int dealCgiEvent(CgiHandler *cgi, u_int32_t event);
 	Config _config;
 	std::list<Socket> _sockets;
