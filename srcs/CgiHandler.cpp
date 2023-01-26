@@ -304,6 +304,7 @@ void CgiHandler::closeCgi(int epfd, bool removeFromSocket) {
 	}
 	if (g_parent && _pid > 0) {
 		kill(_pid, SIGTERM);
+		waitpid(_pid, NULL, 0);
 	}
 	if (removeFromSocket)
 		_sockAddr->removeCgi(this);
