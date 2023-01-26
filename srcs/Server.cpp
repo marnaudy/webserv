@@ -40,10 +40,12 @@ int Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 		return (1);
 	}
 	if (sock->isClientSocket() && event & EPOLLOUT) {
-		return (sock->writeSocket(_epfd));
+		if (sock->writeSocket(_epfd))
+			return (1);
 	}
 	if (sock->isClientSocket() && event & EPOLLIN)
-		return (sock->readSocket(_epfd, _config, envp, this));
+		if (sock->readSocket(_epfd, _config, envp, this))
+			return (1);
 	if (!sock->isClientSocket() && event & EPOLLIN)
 		sock->acceptConnection(_sockets, _epfd);
 	return (0);
@@ -52,10 +54,12 @@ int Server::dealSocketEvent(Socket *sock, u_int32_t event, char **envp) {
 int Server::dealCgiEvent(CgiHandler *cgi, u_int32_t event) {
 	// if (event & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) {
 	if (event & (EPOLLOUT | EPOLLHUP | EPOLLRDHUP)) {
-		cgi->writeToCgi(_epfd);
+		if (cgi->writeToCgi(_epfd))
+			return (1);
 	}
 	if (event & (EPOLLIN | EPOLLHUP | EPOLLRDHUP)) {
-		cgi->readFromCgi(_epfd);
+		if (cgi->readFromCgi(_epfd))
+			return (1);
 	}
 	if (event & (EPOLLERR)) {
 		return (1);

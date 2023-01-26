@@ -211,28 +211,31 @@ void CgiHandler::updateEpoll(int epfd) {
 	}
 }
 
-void CgiHandler::writeToCgi(int epfd) {
+int CgiHandler::writeToCgi(int epfd) {
 	if (_fdIn < 0)
-		return;
+		return (0);
 	if (_bufferIn.getSize() == 0) {
 		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdIn, NULL) < 0)
 			throw CgiException("Error epoll del cgi pipe");
 		close(_fdIn);
 		_fdIn = -1;
-		return;
+		return (0);
 	}
 	int ret = write(_fdIn, _bufferIn.getContent(), _bufferIn.getSize());
 	if (ret == -1) {
-		throw CgiException("write to cgi failed");
+		std::cout << "Writing to CGI pipe failed" << std::endl;
+		return (1);
 	}
 	_bufferIn.erase(ret);
+	return (0);
 }
 
-void CgiHandler::readFromCgi(int epfd) {
+int CgiHandler::readFromCgi(int epfd) {
 	char buf[READ_SIZE];
 	int ret = read(_fdOut, buf, READ_SIZE);
 	if (ret == -1) {
-		throw CgiException("read from cgi failed");
+		std::cout << "Reading from CGI pipe failed" << std::endl;
+		return (1);
 	}
 	if (ret == 0) {
 		if (epoll_ctl(epfd, EPOLL_CTL_DEL, _fdOut, NULL) < 0)
@@ -247,9 +250,10 @@ void CgiHandler::readFromCgi(int epfd) {
 		}
 		sendCgiResponse(epfd);
 		closeCgi(epfd, true);
-		return;
+		return (0);
 	}
 	_bufferOut.addToBuffer(buf, ret);
+	return (0);
 }
 
 void CgiHandler::sendCgiResponse(int epfd) {

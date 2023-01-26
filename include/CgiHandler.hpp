@@ -41,8 +41,8 @@ public:
 	int checkCgi();
 	void exec(Request &req, char **envp, Server *serv);
 	void updateEpoll(int epfd);
-	void writeToCgi(int epfd);
-	void readFromCgi(int epfd);
+	int writeToCgi(int epfd);
+	int readFromCgi(int epfd);
 	void sendCgiResponse(int epfd);
 	void closeCgi(int epfd, bool removeFromSocket);
 private:
