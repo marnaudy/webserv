@@ -132,6 +132,12 @@ void Socket::readSocket(int epfd, Config &config, char **envp, Server *serv) {
 		responseCgi ret = config.handleRequest(req, envp, serv);
 		if (ret.isResponse) {
 			char *resBuffer;
+			if (req.getMethod() == "POST")
+				_closeAfterWrite = true;
+			if (_closeAfterWrite)
+				ret.response->addHeader("connection", "close");
+			else
+				ret.response->addHeader("connection", "keep-alive");
 			size_t resSize = ret.response->exprt(&resBuffer);
 			_writeBuffer.addToBuffer(resBuffer, resSize);
 			delete[] resBuffer;

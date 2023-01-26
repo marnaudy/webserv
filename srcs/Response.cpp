@@ -1,9 +1,12 @@
 #include "Response.hpp"
 
-Response::Response() {}
+Response::Response() {
+	_headers["server"] = "webserv Charly et Max";
+}
 
 Response::Response(unsigned int code) {
 	setCode(code);
+	_headers["server"] = "webserv Charly et Max";
 }
 
 Response::~Response() {}
