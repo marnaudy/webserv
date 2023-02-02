@@ -197,7 +197,9 @@ void Socket::closeSocket(int epfd) {
 
 void Socket::closeSocketFds() {
 	for (std::list<CgiHandler>::iterator it = _cgiHandlers.begin(); it != _cgiHandlers.end(); ++it) {
-		close(it->getFdIn());
+		if (it->getFdIn() >= 0)
+			close(it->getFdIn());
+		if (it->getFdOut() >= 0)
 		close(it->getFdOut());
 	}
 	close(_fd);
