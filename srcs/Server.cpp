@@ -1,10 +1,10 @@
 #include "Server.hpp"
 
 void Server::loadServer(std::string fileName) {
-	_config.loadConfig(fileName);
 	_epfd = epoll_create(10);
 	if (_epfd < 0)
 		throw SocketException("Error epoll create");
+	_config.loadConfig(fileName);
 }
 
 void Server::printConfig() {
@@ -99,11 +99,13 @@ void Server::closeServer() {
 	for (std::list<Socket>::iterator it = _sockets.begin(); it != _sockets.end(); ++it) {
 		it->closeSocket(_epfd);
 	}
-	close(_epfd);
+	if (_epfd >= 0)
+		close(_epfd);
 }
 
 void Server::closeFds() {
-	close(_epfd);
+	if (_epfd >= 0)
+		close(_epfd);
 	for (std::list<Socket>::iterator it = _sockets.begin(); it != _sockets.end(); ++it) {
 		it->closeSocketFds();
 	}

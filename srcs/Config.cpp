@@ -3,7 +3,7 @@
 void Config::loadConfig(std::string fileName) {
 	std::ifstream ifs(fileName.c_str());
 	if (!ifs.is_open())
-		throw BadConfigException("Can't open confid file");
+		throw BadConfigException("Can't open config file");
 	try {
 		parse(ifs);
 	} catch (BadConfigException &e) {
@@ -36,6 +36,8 @@ responseCgi Config::handleRequest(Request &req, char **envp, Server *serv) {
 	unsigned int port = req.getPort();
 	u_int32_t addr = req.getAddress();
 	std::string host = req.getHeader("host");
+	if (host.find_last_of(':') != std::string::npos)
+		host = host.substr(0, host.find_last_of(':'));
 	VirtualServer *chosenServer = NULL;
 	for (std::list<VirtualServer>::iterator it = _servers.begin(); it != _servers.end(); ++it) {
 		if (it->getPort() == port && (it->getAddress() == addr || it->getAddress() == 0)) {

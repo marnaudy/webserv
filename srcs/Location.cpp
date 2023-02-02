@@ -117,7 +117,12 @@ unsigned int Location::match(std::string &uri) {
 void Location::handleGetFile(Response &res, std::string fileName) {
 	std::ifstream ifs(fileName.c_str());
 	if (!ifs.is_open() || ifs.fail()) {
-		res.setCode(404);
+		if (errno == EACCES)
+			res.setCode(403);
+		else if (errno == ENOENT)
+			res.setCode(404);
+		else
+			res.setCode(500);
 		return;
 	}
 	res.readFileContent(ifs);

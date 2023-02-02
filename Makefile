@@ -28,7 +28,7 @@ HEADERS 	=	include/Config.hpp \
 
 CXX			=	c++
 
-CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -g -I./include
+CXXFLAGS	=	-Wall -Wextra -Werror -std=c++98 -I./include
 
 RM			=	rm -f
 
