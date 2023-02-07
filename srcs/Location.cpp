@@ -137,7 +137,7 @@ void Location::handleDirList(Response &res, std::string dirName, std::string &ur
 		res.setCode(500);
 		return;
 	}
-	std::string html = "<html>\n<head><title>Index of " + uri + "</title></head>\n<body>\n<h1>Index of ";
+	std::string html = "<!DOCTYPE html>\n<html>\n<head><title>Index of " + uri + "</title></head>\n<body>\n<h1>Index of ";
 	html += uri + "</h1><hr><br>\n";
 	struct dirent *dirContent = readdir(dirStream);
 	std::vector<std::string> contentVec;

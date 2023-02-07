@@ -2,8 +2,16 @@
 $fileName = substr(getenv("PATH_INFO"), 1);
 $deleted = false;
 if (file_exists($fileName)) {
-	$deleted = true;
-	unlink($fileName);
+	if (is_dir($fileName)) {
+		http_response_code(403);
+	} else {
+		$deleted = unlink($fileName);
+	}
+	if (!$deleted) {
+		http_response_code(403);
+	}
+} else {
+	http_response_code(404);
 }
 ?>
 <!DOCTYPE html
@@ -17,7 +25,7 @@ if (file_exists($fileName)) {
 			if ($deleted)
 				echo $fileName . " has been deleted.";
 			else
-				echo $fileName . " doesn't exist.";
+				echo $fileName . " couldn't be deleted.";
 			?></p>
 	</body>
 
